@@ -464,7 +464,7 @@ function SpellingTab() {
         <>
           <div className="w-full bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-6 flex flex-col items-center gap-3 shadow-lg">
             <div className="text-white font-bold text-sm opacity-80">השלם את האות החסרה:</div>
-            <div className="text-5xl font-extrabold text-white tracking-widest">{displayWord}</div>
+            <div dir="ltr" className="text-5xl font-extrabold text-white tracking-widest">{displayWord}</div>
           </div>
 
           {/* Feedback */}
@@ -475,7 +475,7 @@ function SpellingTab() {
           )}
 
           {/* Letter Buttons */}
-          <div className="flex flex-wrap gap-2 justify-center w-full">
+          <div dir="ltr" className="flex flex-wrap gap-2 justify-center w-full">
             {LETTERS.map(l => {
               let cls = "btn-tap w-12 h-12 rounded-xl font-extrabold text-lg flex items-center justify-center border-2 transition-all ";
               if (!chosen) cls += "bg-white border-green-200 text-green-700 active:bg-green-50";
@@ -522,8 +522,8 @@ function SpellingTab() {
               </div>
               <div className="w-full bg-gray-50 rounded-2xl p-4 text-center">
                 <div className="text-gray-500 text-sm">התשובה הנכונה:</div>
-                <div className="text-3xl font-extrabold text-green-700 tracking-widest mt-1">{word}</div>
-                {!correct && <div className="text-gray-500 text-sm mt-1">כתבת: <span className="text-red-500 font-bold">{typed}</span></div>}
+                <div dir="ltr" className="text-3xl font-extrabold text-green-700 tracking-widest mt-1">{word}</div>
+                {!correct && <div className="text-gray-500 text-sm mt-1">כתבת: <span dir="ltr" className="text-red-500 font-bold">{typed}</span></div>}
               </div>
               <button className="btn-tap w-full bg-green-500 text-white py-3 rounded-2xl font-bold text-lg"
                 onClick={() => setQIdx(i => i + 1)}>הבא →</button>
