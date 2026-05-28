@@ -75,6 +75,13 @@ const SPELLING_EMOJIS = {
   mat:"🏋️", rest:"😴", run:"🏃", mud:"🟫", fast:"⚡", red:"🔴"
 };
 
+const SPELLING_HE = {
+  sit:"לשבת", bin:"פח", tin:"קופסה", stop:"עצור", kid:"ילד",
+  hop:"לקפץ", hot:"חם", dog:"כלב", hut:"בקתה", sun:"שמש",
+  bug:"חרק", cup:"כוס", and:"ו...", pet:"חיית מחמד", big:"גדול",
+  mat:"מחצלת", rest:"מנוחה", run:"לרוץ", mud:"בוץ", fast:"מהיר", red:"אדום"
+};
+
 const LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","M","N","O","P","R","S","T","U"];
 
 const CORRECT_MSGS = ["יופי! 🌟", "כל הכבוד! ⭐", "מצוין! 🎉", "סופר! 🚀", "נהדר! 💫"];
@@ -379,15 +386,40 @@ function PictureQuizTab() {
 }
 
 // ─── TAB 3: SPELLING ─────────────────────────────────────────────────────────
+function WordRevealCard({ word, wasCorrect, onNext }) {
+  useEffect(() => { speak(word); }, [word]);
+  return (
+    <div className="flex flex-col items-center gap-4 w-full bounce-in">
+      <div className={`w-full rounded-3xl p-6 flex flex-col items-center gap-3 shadow-lg ${wasCorrect ? 'bg-gradient-to-br from-green-400 to-teal-500' : 'bg-gradient-to-br from-orange-400 to-red-400'}`}>
+        <div className="text-5xl">{SPELLING_EMOJIS[word] || '📝'}</div>
+        <div style={{ direction: 'ltr', display: 'flex', gap: '6px', justifyContent: 'center' }}>
+          {word.split('').map((ch, i) => (
+            <span key={i} className="text-5xl font-extrabold text-white leading-none">{ch.toUpperCase()}</span>
+          ))}
+        </div>
+        <div className="text-2xl font-bold text-white/90">{SPELLING_HE[word]}</div>
+        <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold mt-1"
+          onClick={() => speak(word)}>🔊 שמע שוב</button>
+      </div>
+      <div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl ${wasCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+        {wasCorrect ? randomMsg(CORRECT_MSGS) : `המילה היא: ${word}`}
+      </div>
+      <button className="btn-tap w-full bg-green-500 text-white py-4 rounded-2xl font-extrabold text-xl"
+        onClick={onNext}>הבא ←</button>
+    </div>
+  );
+}
+
 function SpellingTab() {
   const [mode, setMode] = useState("A");
   const [queue, setQueue] = useState(() => shuffle(SPELLING_WORDS));
   const [qIdx, setQIdx] = useState(0);
   const [blankIdx, setBlankIdx] = useState(0);
-  const [filledLetter, setFilledLetter] = useState(""); // letter shown in blank
-  const [wrongLetters, setWrongLetters] = useState([]); // mode A wrong picks
+  const [filledLetter, setFilledLetter] = useState("");
+  const [wrongLetters, setWrongLetters] = useState([]);
   const [finishedA, setFinishedA] = useState(false);
   const [wasCorrectA, setWasCorrectA] = useState(false);
+  const [showRevealA, setShowRevealA] = useState(false);
   // Mode B
   const [typed, setTyped] = useState("");
   const [attemptsB, setAttemptsB] = useState(0);
@@ -411,6 +443,7 @@ function SpellingTab() {
     setWrongLetters([]);
     setFinishedA(false);
     setWasCorrectA(false);
+    setShowRevealA(false);
     setTyped("");
     setAttemptsB(0);
     setLastWrongTyped("");
@@ -427,27 +460,29 @@ function SpellingTab() {
     setDone(false);
   }
 
+  function advanceNext() { setQIdx(i => i + 1); }
+
   // Mode A: missing letter
   function handleLetterPick(letter) {
     if (finishedA) return;
     const isCorrect = letter.toUpperCase() === word[blankIdx].toUpperCase();
-    setFilledLetter(letter);
     if (isCorrect) {
+      setFilledLetter(letter.toUpperCase());
       setFinishedA(true);
       setWasCorrectA(true);
       setScore(s => ({ c: s.c + 1, t: s.t + 1 }));
-      timerRef.current = setTimeout(() => setQIdx(i => i + 1), 1800);
+      timerRef.current = setTimeout(() => setShowRevealA(true), 600);
     } else {
       const newWrong = [...wrongLetters, letter.toUpperCase()];
       setWrongLetters(newWrong);
-      // briefly show wrong letter in blank then clear it
-      setTimeout(() => setFilledLetter(""), 600);
+      setFilledLetter(letter.toUpperCase());
+      setTimeout(() => setFilledLetter(""), 700);
       if (newWrong.length >= MAX_ATTEMPTS) {
         setFinishedA(true);
         setWasCorrectA(false);
         setScore(s => ({ c: s.c, t: s.t + 1 }));
         setFilledLetter(word[blankIdx].toUpperCase());
-        timerRef.current = setTimeout(() => setQIdx(i => i + 1), 2200);
+        timerRef.current = setTimeout(() => setShowRevealA(true), 800);
       }
     }
   }
@@ -473,25 +508,31 @@ function SpellingTab() {
     }
   }
 
-  // Build the word display with blank slot
-  function renderWordWithBlank(showFilled) {
+  // Word display: letters as individual boxes, direction forced LTR
+  function renderWordWithBlank() {
     if (!word) return null;
     return (
-      <div dir="ltr" className="flex items-end justify-center gap-1">
+      <div style={{ direction: 'ltr', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '6px' }}>
         {word.split('').map((ch, i) => {
           if (i !== blankIdx) {
             return (
-              <span key={i} className="text-5xl font-extrabold text-white leading-none">{ch}</span>
+              <div key={i} className="w-12 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                <span className="text-4xl font-extrabold text-white leading-none">{ch.toUpperCase()}</span>
+              </div>
             );
           }
-          const fl = showFilled ? filledLetter : "";
-          const isWrong = fl && wrongLetters.includes(fl.toUpperCase()) && !wasCorrectA;
+          const fl = filledLetter;
+          const isWrong = fl && wrongLetters.includes(fl) && !wasCorrectA;
           const isRight = fl && wasCorrectA;
           return (
-            <span key={i} className={`w-10 border-b-4 flex items-center justify-center text-5xl font-extrabold leading-none min-h-[56px]
-              ${fl ? (isRight ? 'text-yellow-300 border-yellow-300' : 'text-red-300 border-red-300') : 'text-transparent border-white'}`}>
-              {fl || ch}
-            </span>
+            <div key={i} className={`w-12 h-14 rounded-xl border-4 flex items-center justify-center transition-all
+              ${fl
+                ? (isRight ? 'bg-yellow-300 border-yellow-200' : 'bg-red-400 border-red-300')
+                : 'bg-white/10 border-white border-dashed'}`}>
+              <span className={`text-4xl font-extrabold leading-none ${fl ? 'text-white' : 'text-white/40'}`}>
+                {fl || '_'}
+              </span>
+            </div>
           );
         })}
       </div>
@@ -530,29 +571,25 @@ function SpellingTab() {
           onClick={() => { setMode('B'); restart(); }}>🎧 שמע ואייית</button>
       </div>
 
-      {word && mode === 'A' && (
+      {/* ── MODE A ── */}
+      {word && mode === 'A' && !showRevealA && (
         <>
-          <div className="w-full bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg">
-            <div className="flex items-center gap-3">
+          <div className="w-full bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-5 flex flex-col items-center gap-4 shadow-lg">
+            <div className="flex items-center gap-2">
               <span className="text-4xl">{SPELLING_EMOJIS[word] || '📝'}</span>
-              <div className="text-white font-bold text-sm opacity-80">השלם את האות החסרה:</div>
+              <span className="text-white font-bold text-sm opacity-90">השלם את האות החסרה:</span>
             </div>
-            {renderWordWithBlank(true)}
+            {renderWordWithBlank()}
             <Hearts remaining={finishedA ? (wasCorrectA ? MAX_ATTEMPTS : 0) : attemptsLeftA} />
           </div>
 
-          {finishedA && (
-            <div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${wasCorrectA ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-              {wasCorrectA ? randomMsg(CORRECT_MSGS) : `האות הנכונה היא: ${word[blankIdx].toUpperCase()}`}
-            </div>
-          )}
           {!finishedA && wrongLetters.length > 0 && (
             <div className="w-full text-center text-base font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">
               {randomMsg(WRONG_MSGS)} — נשארו {attemptsLeftA} ניסיונות
             </div>
           )}
 
-          <div dir="ltr" className="flex flex-wrap gap-2 justify-center w-full">
+          <div style={{ direction: 'ltr', display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', width: '100%' }}>
             {LETTERS.map(l => {
               const isWrong = wrongLetters.includes(l);
               const isCorrectLetter = l === word[blankIdx].toUpperCase();
@@ -567,55 +604,45 @@ function SpellingTab() {
         </>
       )}
 
-      {word && mode === 'B' && (
+      {word && mode === 'A' && showRevealA && (
+        <WordRevealCard word={word} wasCorrect={wasCorrectA} onNext={advanceNext} />
+      )}
+
+      {/* ── MODE B ── */}
+      {word && mode === 'B' && !finishedB && (
         <>
           <div className="w-full bg-gradient-to-br from-teal-400 to-green-500 rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <span className="text-4xl">{SPELLING_EMOJIS[word] || '📝'}</span>
-              <div className="text-white font-bold text-sm opacity-80">הקשב ואייית את המילה:</div>
+              <span className="text-white font-bold text-sm opacity-90">הקשב ואייית את המילה:</span>
             </div>
             <div className="text-5xl">🎧</div>
             <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold"
               onClick={() => speak(word)}>🔊 שמע שוב</button>
-            <Hearts remaining={finishedB ? (wasCorrectB ? MAX_ATTEMPTS : 0) : attemptsLeftB} />
+            <Hearts remaining={attemptsLeftB} />
           </div>
 
-          {!finishedB ? (
-            <>
-              {lastWrongTyped && (
-                <div className="w-full text-center text-base font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700">
-                  {randomMsg(WRONG_MSGS)} — נשארו {attemptsLeftB} ניסיונות
-                </div>
-              )}
-              <div className="w-full flex gap-2">
-                <input ref={inputRef} dir="ltr" type="text" value={typed}
-                  onChange={e => setTyped(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                  placeholder="כתוב את המילה..."
-                  className="flex-1 border-2 border-green-300 rounded-2xl px-4 py-3 text-xl font-bold text-center focus:outline-none focus:border-green-500"
-                  autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
-                />
-                <button className="btn-tap bg-green-500 text-white px-5 rounded-2xl font-bold text-lg"
-                  onClick={handleSubmit}>✓</button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${wasCorrectB ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                {wasCorrectB ? randomMsg(CORRECT_MSGS) : randomMsg(WRONG_MSGS)}
-              </div>
-              <div className="w-full bg-gray-50 rounded-2xl p-4 text-center">
-                <div className="text-gray-500 text-sm">התשובה הנכונה:</div>
-                <div dir="ltr" className="text-3xl font-extrabold text-green-700 tracking-widest mt-1">{word}</div>
-                {!wasCorrectB && lastWrongTyped && (
-                  <div className="text-gray-500 text-sm mt-1">כתבת: <span dir="ltr" className="text-red-500 font-bold">{lastWrongTyped}</span></div>
-                )}
-              </div>
-              <button className="btn-tap w-full bg-green-500 text-white py-3 rounded-2xl font-bold text-lg"
-                onClick={() => setQIdx(i => i + 1)}>הבא →</button>
-            </>
+          {lastWrongTyped && (
+            <div className="w-full text-center text-base font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">
+              {randomMsg(WRONG_MSGS)} — נשארו {attemptsLeftB} ניסיונות
+            </div>
           )}
+          <div className="w-full flex gap-2">
+            <input ref={inputRef} dir="ltr" type="text" value={typed}
+              onChange={e => setTyped(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              placeholder="כתוב את המילה..."
+              className="flex-1 border-2 border-green-300 rounded-2xl px-4 py-3 text-xl font-bold text-center focus:outline-none focus:border-green-500"
+              autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
+            />
+            <button className="btn-tap bg-green-500 text-white px-5 rounded-2xl font-bold text-lg"
+              onClick={handleSubmit}>✓</button>
+          </div>
         </>
+      )}
+
+      {word && mode === 'B' && finishedB && (
+        <WordRevealCard word={word} wasCorrect={wasCorrectB} onNext={advanceNext} />
       )}
     </div>
   );
