@@ -11,527 +11,416 @@
   <style>
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; padding: 0; background: #f0f4ff; font-family: system-ui, -apple-system, sans-serif; }
-    .app-container { max-width: 430px; min-height: 100dvh; margin: 0 auto; background: white; position: relative; overflow: hidden; }
+    .app-container { max-width: 430px; min-height: 100dvh; margin: 0 auto; background: white; position: relative; }
     .tab-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: white; border-top: 2px solid #e5e7eb; z-index: 100; }
-    .content-area { padding-bottom: 80px; min-height: 100dvh; }
+    .content-area { overflow-y: auto; padding-bottom: 72px; }
     .flip-card { perspective: 1000px; }
     .flip-card-inner { transition: transform 0.5s; transform-style: preserve-3d; }
     .flip-card-inner.flipped { transform: rotateY(180deg); }
     .flip-card-front, .flip-card-back { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
     .flip-card-back { transform: rotateY(180deg); }
     .btn-tap { transition: transform 0.1s, opacity 0.1s; }
-    .btn-tap:active { transform: scale(0.95); opacity: 0.85; }
-    @keyframes bounce-in { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
-    .bounce-in { animation: bounce-in 0.4s ease-out; }
-    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
-    .shake { animation: shake 0.4s ease-out; }
+    .btn-tap:active { transform: scale(0.94); opacity: 0.85; }
+    @keyframes bounce-in { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+    .bounce-in { animation: bounce-in 0.35s ease-out; }
     ::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect, useCallback, useRef } = React;
+const { useState, useEffect, useRef } = React;
 
-// ─── DATA ───────────────────────────────────────────────────────────────────
+/* ═══════════════════════════ DATA ═══════════════════════════ */
 const VOCAB = [
-  { en: "ice cream",   he: "גלידה",        emoji: "🍦" },
-  { en: "towel",       he: "מגבת",         emoji: "🏖️" },
-  { en: "octopus",     he: "תמנון",        emoji: "🐙" },
-  { en: "cake",        he: "עוגה",         emoji: "🎂" },
-  { en: "bag of chips",he: "שקית צ'יפס",  emoji: "🥔" },
-  { en: "umbrella",    he: "מטרייה",       emoji: "☂️" },
-  { en: "drink",       he: "שתייה",        emoji: "🥤" },
-  { en: "sunglasses",  he: "משקפי שמש",   emoji: "🕶️" },
-  { en: "kite",        he: "עפיפון",       emoji: "🪁" },
-  { en: "jacket",      he: "מעיל",         emoji: "🧥" },
-  { en: "shell",       he: "צדף",          emoji: "🐚" },
-  { en: "cloudy",      he: "מעונן",        emoji: "☁️" },
-  { en: "sunny",       he: "שמשי",         emoji: "☀️" },
-  { en: "jeep",        he: "ג'יפ",         emoji: "🚙" },
-  { en: "weather",     he: "מזג אוויר",    emoji: "🌤️" },
-  { en: "rainy",       he: "גשום",         emoji: "🌧️" },
-  { en: "hot",         he: "חם",           emoji: "🔥" },
-  { en: "iguana",      he: "איגואנה",      emoji: "🦎" },
-  { en: "head",        he: "ראש",          emoji: "👤" },
-  { en: "eyes",        he: "עיניים",       emoji: "👀" },
-  { en: "flamingo",    he: "פלמינגו",      emoji: "🦩" },
-  { en: "nose",        he: "אף",           emoji: "👃" },
-  { en: "robot",       he: "רובוט",        emoji: "🤖" },
-  { en: "mouth",       he: "פה",           emoji: "👄" },
-  { en: "ears",        he: "אוזניים",      emoji: "👂" },
-  { en: "shoulder",    he: "כתף",          emoji: "💪" },
+  { en:"ice cream", he:"גלידה",       emoji:"🍦" },
+  { en:"towel",     he:"מגבת",        emoji:"🏖️" },
+  { en:"octopus",   he:"תמנון",       emoji:"🐙" },
+  { en:"cake",      he:"עוגה",        emoji:"🎂" },
+  { en:"bag of chips",he:"שקית צ'יפס",emoji:"🥔" },
+  { en:"umbrella",  he:"מטרייה",      emoji:"☂️" },
+  { en:"drink",     he:"שתייה",       emoji:"🥤" },
+  { en:"sunglasses",he:"משקפי שמש",  emoji:"🕶️" },
+  { en:"kite",      he:"עפיפון",      emoji:"🪁" },
+  { en:"jacket",    he:"מעיל",        emoji:"🧥" },
+  { en:"shell",     he:"צדף",         emoji:"🐚" },
+  { en:"cloudy",    he:"מעונן",       emoji:"☁️" },
+  { en:"sunny",     he:"שמשי",        emoji:"☀️" },
+  { en:"jeep",      he:"ג'יפ",        emoji:"🚙" },
+  { en:"weather",   he:"מזג אוויר",   emoji:"🌤️" },
+  { en:"rainy",     he:"גשום",        emoji:"🌧️" },
+  { en:"hot",       he:"חם",          emoji:"🔥" },
+  { en:"iguana",    he:"איגואנה",     emoji:"🦎" },
+  { en:"head",      he:"ראש",         emoji:"👤" },
+  { en:"eyes",      he:"עיניים",      emoji:"👀" },
+  { en:"flamingo",  he:"פלמינגו",     emoji:"🦩" },
+  { en:"nose",      he:"אף",          emoji:"👃" },
+  { en:"robot",     he:"רובוט",       emoji:"🤖" },
+  { en:"mouth",     he:"פה",          emoji:"👄" },
+  { en:"ears",      he:"אוזניים",     emoji:"👂" },
+  { en:"shoulder",  he:"כתף",         emoji:"💪" },
 ];
 
 const SPELLING_WORDS = [
   "sit","bin","tin","stop","kid","hop","hot","dog","hut","sun",
   "bug","cup","and","pet","big","mat","rest","run","mud","fast","red"
 ];
-
-const SPELLING_EMOJIS = {
-  sit:"🪑", bin:"🗑️", tin:"🥫", stop:"🛑", kid:"👦",
-  hop:"🐸", hot:"🔥", dog:"🐕", hut:"🛖", sun:"☀️",
-  bug:"🐛", cup:"☕", and:"➕", pet:"🐾", big:"🐘",
-  mat:"🏋️", rest:"😴", run:"🏃", mud:"🟫", fast:"⚡", red:"🔴"
-};
-
-const SPELLING_HE = {
-  sit:"לשבת", bin:"פח", tin:"קופסה", stop:"עצור", kid:"ילד",
-  hop:"לקפץ", hot:"חם", dog:"כלב", hut:"בקתה", sun:"שמש",
-  bug:"חרק", cup:"כוס", and:"ו...", pet:"חיית מחמד", big:"גדול",
-  mat:"מחצלת", rest:"מנוחה", run:"לרוץ", mud:"בוץ", fast:"מהיר", red:"אדום"
-};
+const SP_EMOJI = { sit:"🪑",bin:"🗑️",tin:"🥫",stop:"🛑",kid:"👦",hop:"🐸",hot:"🔥",dog:"🐕",hut:"🛖",sun:"☀️",bug:"🐛",cup:"☕",and:"➕",pet:"🐾",big:"🐘",mat:"🏋️",rest:"😴",run:"🏃",mud:"🟫",fast:"⚡",red:"🔴" };
+const SP_HE   = { sit:"לשבת",bin:"פח",tin:"קופסה",stop:"עצור",kid:"ילד",hop:"לקפץ",hot:"חם",dog:"כלב",hut:"בקתה",sun:"שמש",bug:"חרק",cup:"כוס",and:"ו...",pet:"חיית מחמד",big:"גדול",mat:"מחצלת",rest:"מנוחה",run:"לרוץ",mud:"בוץ",fast:"מהיר",red:"אדום" };
 
 const LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","M","N","O","P","R","S","T","U"];
 
-const CORRECT_MSGS = ["יופי! 🌟", "כל הכבוד! ⭐", "מצוין! 🎉", "סופר! 🚀", "נהדר! 💫"];
-const WRONG_MSGS   = ["נסה שוב 💪", "קרוב מאוד! 🤔", "אל תוותר! 🌈"];
+const LISTEN_SENTENCES = [
+  { sentence:"The big dog can run fast.",        statement:"The dog is big.",            answer:true  },
+  { sentence:"The red bug sits on the mat.",     statement:"The bug sits on a cup.",     answer:false },
+  { sentence:"Tom has a cup of water.",          statement:"Tom has a cup.",             answer:true  },
+  { sentence:"The sun is very hot today.",       statement:"The sun is cold.",           answer:false },
+  { sentence:"A kid can hop and run.",           statement:"The kid can hop.",           answer:true  },
+  { sentence:"The dog rests in the hut.",        statement:"The dog runs in the hut.",   answer:false },
+  { sentence:"The bug is in the mud.",           statement:"The bug is in the mud.",     answer:true  },
+  { sentence:"Tom can see a big red sun.",       statement:"The sun is red.",            answer:true  },
+  { sentence:"The fast pet sits on the mat.",    statement:"The pet runs on the mat.",   answer:false },
+  { sentence:"A tin cup is in the bin.",         statement:"The cup is big.",            answer:false },
+];
 
-// ─── UTILS ───────────────────────────────────────────────────────────────────
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+const PRICES = [
+  { spoken:"five dollars",    amount:5,  options:[3,5,8,10]     },
+  { spoken:"ten dollars",     amount:10, options:[6,10,12,15]   },
+  { spoken:"three dollars",   amount:3,  options:[3,6,9,13]     },
+  { spoken:"eight dollars",   amount:8,  options:[4,8,11,18]    },
+  { spoken:"twelve dollars",  amount:12, options:[2,7,12,20]    },
+  { spoken:"fifteen dollars", amount:15, options:[5,11,15,19]   },
+  { spoken:"seven dollars",   amount:7,  options:[3,7,14,17]    },
+  { spoken:"twenty dollars",  amount:20, options:[10,16,20,25]  },
+  { spoken:"two dollars",     amount:2,  options:[2,5,12,22]    },
+  { spoken:"nine dollars",    amount:9,  options:[4,9,19,90]    },
+];
+
+const LISTEN_ORDER = [
+  { words:["sun","dog","cup"]  },
+  { words:["mat","bug","run"]  },
+  { words:["hot","mud","red"]  },
+  { words:["sit","hop","fast"] },
+  { words:["bin","pet","big"]  },
+  { words:["tin","kid","stop"] },
+];
+
+const TEXTS = [
+  {
+    title:"Tom and His Dog",
+    text:"Tom has a big dog. The dog can run fast. Tom and the dog sit in the sun. The dog is hot. Tom has a cup of water for the dog.",
+    questions:[
+      { q:"Tom has a small dog.",   answer:false },
+      { q:"The dog can run fast.",  answer:true  },
+      { q:"Tom sits in the mud.",   answer:false },
+      { q:"The dog is hot.",        answer:true  },
+      { q:"Tom has a cup.",         answer:true  },
+    ]
+  },
+  {
+    title:"The Red Bug",
+    text:"A red bug sits on a big mat. A dog runs to the mat. The bug hops up fast. The dog sits and rests on the mat.",
+    questions:[
+      { q:"The bug is red.",             answer:true  },
+      { q:"The bug sits on a cup.",      answer:false },
+      { q:"The dog runs.",               answer:true  },
+      { q:"The bug rests on the mat.",   answer:false },
+      { q:"The dog rests.",              answer:true  },
+    ]
+  },
+  {
+    title:"Sun and Mud",
+    text:"The sun is hot. A kid runs in the mud. The mud is wet. The kid stops and rests. The kid sits in the sun to get dry.",
+    questions:[
+      { q:"The sun is hot.",           answer:true  },
+      { q:"The kid runs in the sand.", answer:false },
+      { q:"The mud is wet.",           answer:true  },
+      { q:"The kid rests.",            answer:true  },
+      { q:"The kid sits in the mud.",  answer:false },
+    ]
+  },
+];
+
+const CORRECT_MSGS = ["יופי! 🌟","כל הכבוד! ⭐","מצוין! 🎉","סופר! 🚀","נהדר! 💫"];
+const WRONG_MSGS   = ["נסה שוב 💪","קרוב מאוד! 🤔","אל תוותר! 🌈"];
+const MAX_ATT = 3;
+
+/* ═══════════════════════════ UTILS ══════════════════════════ */
+function shuffle(a){ const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; }
+function pickWrong(arr,correct,n){ return shuffle(arr.filter(x=>x!==correct)).slice(0,n); }
+function rnd(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function speak(text,rate=0.85){ if(!window.speechSynthesis)return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang="en-US"; u.rate=rate; window.speechSynthesis.speak(u); }
+function speakLetter(l){ speak(l,0.7); }
+
+/* ═══════════════════════════ SHARED COMPONENTS ══════════════ */
+function Hearts({remaining}){
+  return <div className="flex gap-1">{Array.from({length:MAX_ATT}).map((_,i)=><span key={i} className="text-xl">{i<remaining?'❤️':'🖤'}</span>)}</div>;
 }
 
-function pickRandom(arr, exclude, count) {
-  const pool = arr.filter(x => x !== exclude);
-  return shuffle(pool).slice(0, count);
-}
-
-function randomMsg(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
-function speak(text, lang = "en-US", rate = 0.85) {
-  if (!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang;
-  u.rate = rate;
-  window.speechSynthesis.speak(u);
-}
-
-// ─── TAB 1: FLASHCARDS ───────────────────────────────────────────────────────
-function FlashcardsTab() {
-  const [deck, setDeck] = useState(() => VOCAB.map((v, i) => ({ ...v, id: i, known: false })));
-  const [filterUnknown, setFilterUnknown] = useState(false);
-  const [idx, setIdx] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-
-  const cards = filterUnknown ? deck.filter(c => !c.known) : deck;
-  const card = cards[idx] || null;
-  const total = cards.length;
-
-  useEffect(() => {
-    setIdx(0);
-    setFlipped(false);
-  }, [filterUnknown]);
-
-  useEffect(() => {
-    if (card && !flipped) speak(card.en);
-  }, [card, flipped]);
-
-  function go(dir) {
-    setFlipped(false);
-    setIdx(i => {
-      const next = (i + dir + total) % total;
-      return next;
-    });
-  }
-
-  function doShuffle() {
-    setDeck(d => shuffle(d));
-    setIdx(0);
-    setFlipped(false);
-  }
-
-  function toggleKnown() {
-    if (!card) return;
-    setDeck(d => d.map(c => c.id === card.id ? { ...c, known: !c.known } : c));
-  }
-
-  function handleFlip() {
-    setFlipped(f => !f);
-    if (!flipped) speak(card.en);
-  }
-
-  const knownCount = deck.filter(c => c.known).length;
-
-  if (!card) return (
-    <div className="flex flex-col items-center justify-center h-64 gap-4">
-      <div className="text-5xl">🎉</div>
-      <p className="text-xl font-bold text-purple-700">כל הכבוד! סיימת את כל הכרטיסיות!</p>
-      <button className="btn-tap bg-purple-500 text-white px-6 py-3 rounded-2xl font-bold text-lg"
-        onClick={() => { setFilterUnknown(false); setIdx(0); }}>
-        התחל מחדש
-      </button>
-    </div>
-  );
-
+function WordBoxes({word}){
   return (
-    <div className="flex flex-col items-center gap-4 px-4 pt-6">
-      {/* Header */}
-      <div className="w-full flex items-center justify-between">
-        <div className="text-sm font-bold text-purple-600 bg-purple-100 rounded-xl px-3 py-1">
-          {idx + 1} / {total}
+    <div style={{direction:'ltr',display:'flex',gap:'6px',justifyContent:'center',flexWrap:'wrap'}}>
+      {word.split('').map((ch,i)=>(
+        <div key={i} className="w-11 h-13 bg-white/20 rounded-xl flex items-center justify-center" style={{minWidth:'44px',minHeight:'52px'}}>
+          <span className="text-4xl font-extrabold text-white leading-none">{ch.toUpperCase()}</span>
         </div>
-        <h2 className="text-lg font-extrabold text-purple-700">כרטיסיות</h2>
-        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">
-          ✓ {knownCount}
-        </div>
-      </div>
-
-      {/* Flip Card */}
-      <div className="flip-card w-full" style={{height: 220}} onClick={handleFlip}>
-        <div className={`flip-card-inner w-full h-full relative ${flipped ? 'flipped' : ''}`}>
-          {/* Front */}
-          <div className="flip-card-front absolute inset-0 bg-gradient-to-br from-purple-400 to-violet-600 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 cursor-pointer">
-            <div className="text-6xl">{card.emoji}</div>
-            <div className="text-3xl font-extrabold text-white tracking-wide">{card.en}</div>
-            <div className="text-purple-200 text-sm mt-2">לחץ להפוך 👆</div>
-          </div>
-          {/* Back */}
-          <div className="flip-card-back absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-700 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 cursor-pointer">
-            <div className="text-6xl">{card.emoji}</div>
-            <div className="text-3xl font-extrabold text-white tracking-wide">{card.en}</div>
-            <div className="text-2xl font-bold text-yellow-200">{card.he}</div>
-            <button className="mt-2 bg-white/20 text-white px-4 py-1 rounded-xl text-sm"
-              onClick={e => { e.stopPropagation(); speak(card.en); }}>
-              🔊 שמע שוב
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex gap-3 w-full">
-        <button className="btn-tap flex-1 bg-purple-100 text-purple-700 py-3 rounded-2xl font-bold text-xl"
-          onClick={() => go(-1)}>← הקודם</button>
-        <button className="btn-tap flex-1 bg-purple-100 text-purple-700 py-3 rounded-2xl font-bold text-xl"
-          onClick={() => go(1)}>הבא →</button>
-      </div>
-
-      <div className="flex gap-3 w-full">
-        <button className="btn-tap flex-1 bg-yellow-400 text-white py-3 rounded-2xl font-bold"
-          onClick={doShuffle}>🔀 ערבב</button>
-        <button
-          className={`btn-tap flex-1 py-3 rounded-2xl font-bold ${card.known ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600'}`}
-          onClick={toggleKnown}>
-          {card.known ? '✓ ידוע!' : '☐ סמן כידוע'}
-        </button>
-      </div>
-
-      <button
-        className={`btn-tap w-full py-3 rounded-2xl font-bold border-2 ${filterUnknown ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 text-gray-500'}`}
-        onClick={() => setFilterUnknown(f => !f)}>
-        {filterUnknown ? '👁 מציג: לא ידועות' : '👁 הצג רק לא ידועות'}
-      </button>
-    </div>
-  );
-}
-
-// ─── TAB 2: PICTURE QUIZ ─────────────────────────────────────────────────────
-const MAX_ATTEMPTS = 3;
-
-function Hearts({ remaining }) {
-  return (
-    <div className="flex gap-1">
-      {Array.from({ length: MAX_ATTEMPTS }).map((_, i) => (
-        <span key={i} className="text-xl">{i < remaining ? '❤️' : '🖤'}</span>
       ))}
     </div>
   );
 }
 
-function PictureQuizTab() {
-  const [mode, setMode] = useState("A");
-  const [queue, setQueue] = useState(() => shuffle(VOCAB));
-  const [qIdx, setQIdx] = useState(0);
-  const [options, setOptions] = useState([]);
-  const [wrongPicks, setWrongPicks] = useState([]);
-  const [finished, setFinished] = useState(false);
-  const [wasCorrect, setWasCorrect] = useState(false);
-  const [score, setScore] = useState({ correct: 0, total: 0 });
-  const [done, setDone] = useState(false);
-  const timerRef = useRef(null);
-
-  const current = queue[qIdx];
-  const attemptsLeft = MAX_ATTEMPTS - wrongPicks.length;
-
-  useEffect(() => {
-    if (!current) { setDone(true); return; }
-    const wrongs = pickRandom(VOCAB, current, 3);
-    setOptions(shuffle([current, ...wrongs]));
-    setWrongPicks([]);
-    setFinished(false);
-    setWasCorrect(false);
-    if (mode === "A") speak(current.en);
-  }, [qIdx, queue, mode]);
-
-  function handleSelect(opt) {
-    if (finished) return;
-    const isCorrect = opt.en === current.en;
-    if (isCorrect) {
-      setFinished(true);
-      setWasCorrect(true);
-      setScore(s => ({ correct: s.correct + 1, total: s.total + 1 }));
-      timerRef.current = setTimeout(() => setQIdx(i => i + 1), 1500);
-    } else {
-      const newWrong = [...wrongPicks, opt.en];
-      setWrongPicks(newWrong);
-      if (newWrong.length >= MAX_ATTEMPTS) {
-        setFinished(true);
-        setWasCorrect(false);
-        setScore(s => ({ correct: s.correct, total: s.total + 1 }));
-        timerRef.current = setTimeout(() => setQIdx(i => i + 1), 2000);
-      }
-    }
-  }
-
-  function restart() {
-    clearTimeout(timerRef.current);
-    setQueue(shuffle(VOCAB));
-    setQIdx(0);
-    setScore({ correct: 0, total: 0 });
-    setDone(false);
-    setWrongPicks([]);
-    setFinished(false);
-    setWasCorrect(false);
-  }
-
-  if (done) return (
-    <div className="flex flex-col items-center justify-center h-80 gap-5 px-6">
-      <div className="text-6xl bounce-in">🎊</div>
-      <p className="text-2xl font-extrabold text-orange-600 text-center">כל הכבוד! סיימת את הסט!</p>
-      <div className="bg-orange-100 rounded-2xl px-8 py-4 text-center">
-        <div className="text-4xl font-extrabold text-orange-700">{score.correct}/{score.total}</div>
-        <div className="text-orange-500 font-bold">תשובות נכונות</div>
+function RevealCard({word,wasCorrect,onNext}){
+  useEffect(()=>{ speak(word); },[word]);
+  return (
+    <div className="flex flex-col items-center gap-3 w-full bounce-in">
+      <div className={`w-full rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg ${wasCorrect?'bg-gradient-to-br from-green-400 to-teal-500':'bg-gradient-to-br from-orange-400 to-red-400'}`}>
+        <div className="text-5xl">{SP_EMOJI[word]||'📝'}</div>
+        <WordBoxes word={word}/>
+        <div className="text-2xl font-bold text-white/90">{SP_HE[word]}</div>
+        <button className="btn-tap bg-white/30 text-white px-5 py-1.5 rounded-xl font-bold text-sm" onClick={()=>speak(word)}>🔊 שמע שוב</button>
       </div>
-      <button className="btn-tap bg-orange-500 text-white px-8 py-3 rounded-2xl font-bold text-lg"
-        onClick={restart}>🔄 שחק שוב</button>
+      <div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl ${wasCorrect?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}`}>
+        {wasCorrect ? rnd(CORRECT_MSGS) : `המילה היא: ${word}`}
+      </div>
+      <button className="btn-tap w-full bg-green-500 text-white py-4 rounded-2xl font-extrabold text-xl" onClick={onNext}>הבא ←</button>
     </div>
   );
+}
 
-  return (
+/* ══════════════════════════ TAB 1: FLASHCARDS ═══════════════ */
+function FlashcardsTab(){
+  const [deck,setDeck]=useState(()=>VOCAB.map((v,i)=>({...v,id:i,known:false})));
+  const [filterUnknown,setFilterUnknown]=useState(false);
+  const [idx,setIdx]=useState(0);
+  const [flipped,setFlipped]=useState(false);
+  const cards=filterUnknown?deck.filter(c=>!c.known):deck;
+  const card=cards[idx]||null;
+  useEffect(()=>{setIdx(0);setFlipped(false);},[filterUnknown]);
+  useEffect(()=>{ if(card&&!flipped)speak(card.en); },[card,flipped]);
+  function go(d){setFlipped(false);setIdx(i=>(i+d+cards.length)%cards.length);}
+  if(!card) return(
+    <div className="flex flex-col items-center justify-center h-64 gap-4 px-4">
+      <div className="text-5xl">🎉</div>
+      <p className="text-xl font-bold text-purple-700 text-center">כל הכבוד! סיימת את כל הכרטיסיות!</p>
+      <button className="btn-tap bg-purple-500 text-white px-6 py-3 rounded-2xl font-bold text-lg" onClick={()=>{setFilterUnknown(false);setIdx(0);}}>התחל מחדש</button>
+    </div>
+  );
+  return(
     <div className="flex flex-col items-center gap-4 px-4 pt-6">
       <div className="w-full flex items-center justify-between">
-        <div className="text-sm font-bold text-orange-600 bg-orange-100 rounded-xl px-3 py-1">
-          {qIdx + 1} / {queue.length}
-        </div>
-        <h2 className="text-lg font-extrabold text-orange-700">תמונות</h2>
-        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">
-          {score.correct}/{score.total}
+        <div className="text-sm font-bold text-purple-600 bg-purple-100 rounded-xl px-3 py-1">{idx+1} / {cards.length}</div>
+        <h2 className="text-lg font-extrabold text-purple-700">כרטיסיות</h2>
+        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">✓ {deck.filter(c=>c.known).length}</div>
+      </div>
+      <div className="flip-card w-full" style={{height:220}} onClick={()=>{setFlipped(f=>!f);if(!flipped)speak(card.en);}}>
+        <div className={`flip-card-inner w-full h-full relative ${flipped?'flipped':''}`}>
+          <div className="flip-card-front absolute inset-0 bg-gradient-to-br from-purple-400 to-violet-600 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 cursor-pointer">
+            <div className="text-6xl">{card.emoji}</div>
+            <div dir="ltr" className="text-3xl font-extrabold text-white tracking-wide">{card.en}</div>
+            <div className="text-purple-200 text-sm mt-1">לחץ להפוך 👆</div>
+          </div>
+          <div className="flip-card-back absolute inset-0 bg-gradient-to-br from-violet-500 to-purple-700 rounded-3xl shadow-xl flex flex-col items-center justify-center gap-3 cursor-pointer">
+            <div className="text-6xl">{card.emoji}</div>
+            <div dir="ltr" className="text-3xl font-extrabold text-white tracking-wide">{card.en}</div>
+            <div className="text-2xl font-bold text-yellow-200">{card.he}</div>
+            <button className="mt-1 bg-white/20 text-white px-4 py-1 rounded-xl text-sm" onClick={e=>{e.stopPropagation();speak(card.en);}}>🔊 שמע שוב</button>
+          </div>
         </div>
       </div>
-
-      <div className="flex w-full bg-orange-100 rounded-2xl p-1 gap-1">
-        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-sm transition-all ${mode === 'A' ? 'bg-orange-500 text-white shadow' : 'text-orange-600'}`}
-          onClick={() => { setMode('A'); restart(); }}>מילה ← אמוג'י</button>
-        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-sm transition-all ${mode === 'B' ? 'bg-orange-500 text-white shadow' : 'text-orange-600'}`}
-          onClick={() => { setMode('B'); restart(); }}>אמוג'י ← מילה</button>
+      <div className="flex gap-3 w-full">
+        <button className="btn-tap flex-1 bg-purple-100 text-purple-700 py-3 rounded-2xl font-bold text-xl" onClick={()=>go(-1)}>← הקודם</button>
+        <button className="btn-tap flex-1 bg-purple-100 text-purple-700 py-3 rounded-2xl font-bold text-xl" onClick={()=>go(1)}>הבא →</button>
       </div>
-
-      {current && (
-        <>
-          <div className="w-full bg-gradient-to-br from-orange-400 to-yellow-400 rounded-3xl p-5 flex flex-col items-center gap-2 shadow-lg">
-            {mode === 'A' ? (
-              <>
-                <div className="text-white font-bold text-sm opacity-80">מה הסמל של המילה?</div>
-                <div dir="ltr" className="text-3xl font-extrabold text-white">{current.en}</div>
-                <button className="btn-tap bg-white/30 text-white px-4 py-1 rounded-xl text-sm"
-                  onClick={() => speak(current.en)}>🔊 שמע</button>
-              </>
-            ) : (
-              <>
-                <div className="text-white font-bold text-sm opacity-80">מה המילה בשביל?</div>
-                <div className="text-7xl leading-none">{current.emoji}</div>
-              </>
-            )}
-            <Hearts remaining={finished ? (wasCorrect ? MAX_ATTEMPTS : 0) : attemptsLeft} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 w-full">
-            {options.map((opt, i) => {
-              const isWrong = wrongPicks.includes(opt.en);
-              const isCorrect = opt.en === current.en;
-              let cls = "btn-tap py-5 rounded-2xl font-bold text-2xl flex items-center justify-center border-2 transition-all ";
-              if (finished && isCorrect) cls += "bg-green-400 border-green-500 text-white scale-105";
-              else if (isWrong) cls += "bg-red-200 border-red-300 text-red-400";
-              else if (finished) cls += "bg-gray-100 border-gray-200 text-gray-300";
-              else cls += "bg-white border-orange-200 text-gray-700 active:bg-orange-50";
-              return (
-                <button key={i} className={cls} onClick={() => handleSelect(opt)}>
-                  {mode === 'A' ? opt.emoji : <span className="text-lg">{opt.en}</span>}
-                </button>
-              );
-            })}
-          </div>
-
-          {finished && (
-            <div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${wasCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-              {wasCorrect ? randomMsg(CORRECT_MSGS) : `התשובה הנכונה: ${current.emoji} ${current.en}`}
-            </div>
-          )}
-          {!finished && wrongPicks.length > 0 && (
-            <div className="w-full text-center text-lg font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">
-              {randomMsg(WRONG_MSGS)} — נשארו {attemptsLeft} ניסיונות
-            </div>
-          )}
-        </>
-      )}
+      <div className="flex gap-3 w-full">
+        <button className="btn-tap flex-1 bg-yellow-400 text-white py-3 rounded-2xl font-bold" onClick={()=>{setDeck(d=>shuffle(d));setIdx(0);setFlipped(false);}}>🔀 ערבב</button>
+        <button className={`btn-tap flex-1 py-3 rounded-2xl font-bold ${card.known?'bg-green-500 text-white':'bg-gray-100 text-gray-600'}`} onClick={()=>setDeck(d=>d.map(c=>c.id===card.id?{...c,known:!c.known}:c))}>{card.known?'✓ ידוע!':'☐ סמן כידוע'}</button>
+      </div>
+      <button className={`btn-tap w-full py-3 rounded-2xl font-bold border-2 ${filterUnknown?'border-purple-500 bg-purple-50 text-purple-700':'border-gray-200 text-gray-500'}`} onClick={()=>setFilterUnknown(f=>!f)}>{filterUnknown?'👁 מציג: לא ידועות':'👁 הצג רק לא ידועות'}</button>
     </div>
   );
 }
 
-// ─── TAB 3: SPELLING ─────────────────────────────────────────────────────────
-function WordRevealCard({ word, wasCorrect, onNext }) {
-  useEffect(() => { speak(word); }, [word]);
-  return (
-    <div className="flex flex-col items-center gap-4 w-full bounce-in">
-      <div className={`w-full rounded-3xl p-6 flex flex-col items-center gap-3 shadow-lg ${wasCorrect ? 'bg-gradient-to-br from-green-400 to-teal-500' : 'bg-gradient-to-br from-orange-400 to-red-400'}`}>
-        <div className="text-5xl">{SPELLING_EMOJIS[word] || '📝'}</div>
-        <div style={{ direction: 'ltr', display: 'flex', gap: '6px', justifyContent: 'center' }}>
-          {word.split('').map((ch, i) => (
-            <span key={i} className="text-5xl font-extrabold text-white leading-none">{ch.toUpperCase()}</span>
-          ))}
-        </div>
-        <div className="text-2xl font-bold text-white/90">{SPELLING_HE[word]}</div>
-        <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold mt-1"
-          onClick={() => speak(word)}>🔊 שמע שוב</button>
-      </div>
-      <div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl ${wasCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-        {wasCorrect ? randomMsg(CORRECT_MSGS) : `המילה היא: ${word}`}
-      </div>
-      <button className="btn-tap w-full bg-green-500 text-white py-4 rounded-2xl font-extrabold text-xl"
-        onClick={onNext}>הבא ←</button>
-    </div>
-  );
-}
-
-function SpellingTab() {
-  const [mode, setMode] = useState("A");
-  const [queue, setQueue] = useState(() => shuffle(SPELLING_WORDS));
-  const [qIdx, setQIdx] = useState(0);
-  const [blankIdx, setBlankIdx] = useState(0);
-  const [filledLetter, setFilledLetter] = useState("");
-  const [wrongLetters, setWrongLetters] = useState([]);
-  const [finishedA, setFinishedA] = useState(false);
-  const [wasCorrectA, setWasCorrectA] = useState(false);
-  const [showRevealA, setShowRevealA] = useState(false);
-  // Mode B
-  const [typed, setTyped] = useState("");
-  const [attemptsB, setAttemptsB] = useState(0);
-  const [lastWrongTyped, setLastWrongTyped] = useState("");
-  const [finishedB, setFinishedB] = useState(false);
-  const [wasCorrectB, setWasCorrectB] = useState(false);
-  const [score, setScore] = useState({ c: 0, t: 0 });
-  const [done, setDone] = useState(false);
-  const timerRef = useRef(null);
-  const inputRef = useRef(null);
-
-  const word = queue[qIdx];
-  const attemptsLeftA = MAX_ATTEMPTS - wrongLetters.length;
-  const attemptsLeftB = MAX_ATTEMPTS - attemptsB;
-
-  useEffect(() => {
-    if (qIdx >= queue.length) { setDone(true); return; }
-    const bi = Math.floor(Math.random() * queue[qIdx].length);
-    setBlankIdx(bi);
-    setFilledLetter("");
-    setWrongLetters([]);
-    setFinishedA(false);
-    setWasCorrectA(false);
-    setShowRevealA(false);
-    setTyped("");
-    setAttemptsB(0);
-    setLastWrongTyped("");
-    setFinishedB(false);
-    setWasCorrectB(false);
-    if (mode === "B") setTimeout(() => speak(queue[qIdx]), 200);
-  }, [qIdx, mode, queue]);
-
-  function restart() {
-    clearTimeout(timerRef.current);
-    setQueue(shuffle(SPELLING_WORDS));
-    setQIdx(0);
-    setScore({ c: 0, t: 0 });
-    setDone(false);
+/* ══════════════════════════ TAB 2: PICTURE QUIZ ════════════ */
+function PictureQuizTab(){
+  const [mode,setMode]=useState("A");
+  const [queue,setQueue]=useState(()=>shuffle(VOCAB));
+  const [qIdx,setQIdx]=useState(0);
+  const [options,setOptions]=useState([]);
+  const [wrongPicks,setWrongPicks]=useState([]);
+  const [finished,setFinished]=useState(false);
+  const [wasCorrect,setWasCorrect]=useState(false);
+  const [score,setScore]=useState({c:0,t:0});
+  const [done,setDone]=useState(false);
+  const timerRef=useRef(null);
+  const current=queue[qIdx];
+  const attLeft=MAX_ATT-wrongPicks.length;
+  useEffect(()=>{
+    if(!current){setDone(true);return;}
+    setOptions(shuffle([current,...pickWrong(VOCAB,current,3)]));
+    setWrongPicks([]);setFinished(false);setWasCorrect(false);
+    if(mode==="A")speak(current.en);
+  },[qIdx,queue,mode]);
+  function handleSelect(opt){
+    if(finished)return;
+    if(opt.en===current.en){
+      setFinished(true);setWasCorrect(true);setScore(s=>({c:s.c+1,t:s.t+1}));
+      timerRef.current=setTimeout(()=>setQIdx(i=>i+1),1500);
+    } else {
+      const nw=[...wrongPicks,opt.en];setWrongPicks(nw);
+      if(nw.length>=MAX_ATT){setFinished(true);setWasCorrect(false);setScore(s=>({c:s.c,t:s.t+1}));timerRef.current=setTimeout(()=>setQIdx(i=>i+1),2000);}
+    }
   }
+  function restart(){clearTimeout(timerRef.current);setQueue(shuffle(VOCAB));setQIdx(0);setScore({c:0,t:0});setDone(false);setWrongPicks([]);setFinished(false);setWasCorrect(false);}
+  if(done)return(
+    <div className="flex flex-col items-center justify-center h-80 gap-5 px-6">
+      <div className="text-6xl bounce-in">🎊</div>
+      <p className="text-2xl font-extrabold text-orange-600 text-center">כל הכבוד! סיימת!</p>
+      <div className="bg-orange-100 rounded-2xl px-8 py-4 text-center">
+        <div className="text-4xl font-extrabold text-orange-700">{score.c}/{score.t}</div>
+        <div className="text-orange-500 font-bold">תשובות נכונות</div>
+      </div>
+      <button className="btn-tap bg-orange-500 text-white px-8 py-3 rounded-2xl font-bold text-lg" onClick={restart}>🔄 שחק שוב</button>
+    </div>
+  );
+  return(
+    <div className="flex flex-col items-center gap-4 px-4 pt-6">
+      <div className="w-full flex items-center justify-between">
+        <div className="text-sm font-bold text-orange-600 bg-orange-100 rounded-xl px-3 py-1">{qIdx+1} / {queue.length}</div>
+        <h2 className="text-lg font-extrabold text-orange-700">תמונות</h2>
+        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">{score.c}/{score.t}</div>
+      </div>
+      <div className="flex w-full bg-orange-100 rounded-2xl p-1 gap-1">
+        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-sm transition-all ${mode==='A'?'bg-orange-500 text-white shadow':'text-orange-600'}`} onClick={()=>{setMode('A');restart();}}>מילה ← 🖼️</button>
+        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-sm transition-all ${mode==='B'?'bg-orange-500 text-white shadow':'text-orange-600'}`} onClick={()=>{setMode('B');restart();}}>🖼️ ← מילה</button>
+      </div>
+      {current&&(<>
+        <div className="w-full bg-gradient-to-br from-orange-400 to-yellow-400 rounded-3xl p-5 flex flex-col items-center gap-2 shadow-lg">
+          {mode==='A'?(<>
+            <div className="text-white font-bold text-sm opacity-80">מה הסמל של המילה?</div>
+            <div dir="ltr" className="text-3xl font-extrabold text-white">{current.en}</div>
+            <button className="btn-tap bg-white/30 text-white px-4 py-1 rounded-xl text-sm" onClick={()=>speak(current.en)}>🔊 שמע</button>
+          </>):(<>
+            <div className="text-white font-bold text-sm opacity-80">מה המילה בשביל?</div>
+            <div className="text-7xl leading-none">{current.emoji}</div>
+          </>)}
+          <Hearts remaining={finished?(wasCorrect?MAX_ATT:0):attLeft}/>
+        </div>
+        <div className="grid grid-cols-2 gap-3 w-full">
+          {options.map((opt,i)=>{
+            const isWrong=wrongPicks.includes(opt.en);
+            const isRight=opt.en===current.en;
+            let cls="btn-tap py-5 rounded-2xl font-bold text-2xl flex items-center justify-center border-2 transition-all ";
+            if(finished&&isRight)cls+="bg-green-400 border-green-500 text-white scale-105";
+            else if(isWrong)cls+="bg-red-200 border-red-300 text-red-400";
+            else if(finished)cls+="bg-gray-100 border-gray-200 text-gray-300";
+            else cls+="bg-white border-orange-200 text-gray-700 active:bg-orange-50";
+            return <button key={i} className={cls} onClick={()=>handleSelect(opt)}>{mode==='A'?opt.emoji:<span className="text-lg">{opt.en}</span>}</button>;
+          })}
+        </div>
+        {finished&&<div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${wasCorrect?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}`}>{wasCorrect?rnd(CORRECT_MSGS):`התשובה: ${current.emoji} ${current.en}`}</div>}
+        {!finished&&wrongPicks.length>0&&<div className="w-full text-center text-base font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">{rnd(WRONG_MSGS)} — נשארו {attLeft} ניסיונות</div>}
+      </>)}
+    </div>
+  );
+}
 
-  function advanceNext() { setQIdx(i => i + 1); }
+/* ══════════════════════════ TAB 3: SPELLING ════════════════ */
+function SpellingTab(){
+  const [phase,setPhase]=useState("learn"); // "learn"|"practice"
+  const [learnIdx,setLearnIdx]=useState(0);
+  const [practiceMode,setPracticeMode]=useState("A"); // A=missing B=hear+type C=hebrew→en
+  // practice state
+  const [queue,setQueue]=useState(()=>shuffle(SPELLING_WORDS));
+  const [qIdx,setQIdx]=useState(0);
+  const [blankIdx,setBlankIdx]=useState(0);
+  const [filledLetter,setFilledLetter]=useState("");
+  const [wrongLetters,setWrongLetters]=useState([]);
+  const [finishedA,setFinishedA]=useState(false);
+  const [wasCorrectA,setWasCorrectA]=useState(false);
+  const [showRevealA,setShowRevealA]=useState(false);
+  const [typed,setTyped]=useState("");
+  const [attB,setAttB]=useState(0);
+  const [lastWrong,setLastWrong]=useState("");
+  const [finishedBC,setFinishedBC]=useState(false);
+  const [wasCorrectBC,setWasCorrectBC]=useState(false);
+  const [score,setScore]=useState({c:0,t:0});
+  const [done,setDone]=useState(false);
+  const timerRef=useRef(null);
+  const inputRef=useRef(null);
+  const word=queue[qIdx];
+  const attLeftA=MAX_ATT-wrongLetters.length;
+  const attLeftBC=MAX_ATT-attB;
+
+  // learn phase: auto-speak
+  useEffect(()=>{ if(phase==="learn")speak(SPELLING_WORDS[learnIdx]); },[learnIdx,phase]);
+
+  useEffect(()=>{
+    if(phase!=="practice")return;
+    if(qIdx>=queue.length){setDone(true);return;}
+    const bi=Math.floor(Math.random()*queue[qIdx].length);
+    setBlankIdx(bi);setFilledLetter("");setWrongLetters([]);
+    setFinishedA(false);setWasCorrectA(false);setShowRevealA(false);
+    setTyped("");setAttB(0);setLastWrong("");setFinishedBC(false);setWasCorrectBC(false);
+    if(practiceMode==="B")setTimeout(()=>speak(queue[qIdx]),200);
+  },[qIdx,practiceMode,queue,phase]);
+
+  function restart(){
+    clearTimeout(timerRef.current);
+    setQueue(shuffle(SPELLING_WORDS));setQIdx(0);setScore({c:0,t:0});setDone(false);
+  }
+  function startPractice(){setPhase("practice");restart();}
+  function advanceNext(){setQIdx(i=>i+1);}
 
   // Mode A: missing letter
-  function handleLetterPick(letter) {
-    if (finishedA) return;
-    const isCorrect = letter.toUpperCase() === word[blankIdx].toUpperCase();
-    if (isCorrect) {
-      setFilledLetter(letter.toUpperCase());
-      setFinishedA(true);
-      setWasCorrectA(true);
-      setScore(s => ({ c: s.c + 1, t: s.t + 1 }));
-      timerRef.current = setTimeout(() => setShowRevealA(true), 600);
+  function handleLetterPick(letter){
+    if(finishedA)return;
+    const isOk=letter.toUpperCase()===word[blankIdx].toUpperCase();
+    if(isOk){
+      setFilledLetter(letter.toUpperCase());setFinishedA(true);setWasCorrectA(true);
+      setScore(s=>({c:s.c+1,t:s.t+1}));
+      timerRef.current=setTimeout(()=>setShowRevealA(true),600);
     } else {
-      const newWrong = [...wrongLetters, letter.toUpperCase()];
-      setWrongLetters(newWrong);
+      const nw=[...wrongLetters,letter.toUpperCase()];setWrongLetters(nw);
       setFilledLetter(letter.toUpperCase());
-      setTimeout(() => setFilledLetter(""), 700);
-      if (newWrong.length >= MAX_ATTEMPTS) {
-        setFinishedA(true);
-        setWasCorrectA(false);
-        setScore(s => ({ c: s.c, t: s.t + 1 }));
+      setTimeout(()=>setFilledLetter(""),700);
+      if(nw.length>=MAX_ATT){
+        setFinishedA(true);setWasCorrectA(false);
+        setScore(s=>({c:s.c,t:s.t+1}));
         setFilledLetter(word[blankIdx].toUpperCase());
-        timerRef.current = setTimeout(() => setShowRevealA(true), 800);
+        timerRef.current=setTimeout(()=>setShowRevealA(true),800);
       }
     }
   }
 
-  // Mode B: hear and type
-  function handleSubmit() {
-    if (finishedB || !typed.trim()) return;
-    const isCorrect = typed.trim().toLowerCase() === word.toLowerCase();
-    if (isCorrect) {
-      setFinishedB(true);
-      setWasCorrectB(true);
-      setScore(s => ({ c: s.c + 1, t: s.t + 1 }));
+  // Mode B and C: type the word
+  function handleSubmit(){
+    if(finishedBC||!typed.trim())return;
+    const isOk=typed.trim().toLowerCase()===word.toLowerCase();
+    if(isOk){
+      setFinishedBC(true);setWasCorrectBC(true);setScore(s=>({c:s.c+1,t:s.t+1}));
     } else {
-      const newAttempts = attemptsB + 1;
-      setLastWrongTyped(typed.trim());
-      setAttemptsB(newAttempts);
-      setTyped("");
-      if (newAttempts >= MAX_ATTEMPTS) {
-        setFinishedB(true);
-        setWasCorrectB(false);
-        setScore(s => ({ c: s.c, t: s.t + 1 }));
-      }
+      const na=attB+1;setLastWrong(typed.trim());setAttB(na);setTyped("");
+      if(na>=MAX_ATT){setFinishedBC(true);setWasCorrectBC(false);setScore(s=>({c:s.c,t:s.t+1}));}
     }
   }
 
-  // Word display: letters as individual boxes, direction forced LTR
-  function renderWordWithBlank() {
-    if (!word) return null;
-    return (
-      <div style={{ direction: 'ltr', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: '6px' }}>
-        {word.split('').map((ch, i) => {
-          if (i !== blankIdx) {
-            return (
-              <div key={i} className="w-12 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                <span className="text-4xl font-extrabold text-white leading-none">{ch.toUpperCase()}</span>
-              </div>
-            );
-          }
-          const fl = filledLetter;
-          const isWrong = fl && wrongLetters.includes(fl) && !wasCorrectA;
-          const isRight = fl && wasCorrectA;
-          return (
-            <div key={i} className={`w-12 h-14 rounded-xl border-4 flex items-center justify-center transition-all
-              ${fl
-                ? (isRight ? 'bg-yellow-300 border-yellow-200' : 'bg-red-400 border-red-300')
-                : 'bg-white/10 border-white border-dashed'}`}>
-              <span className={`text-4xl font-extrabold leading-none ${fl ? 'text-white' : 'text-white/40'}`}>
-                {fl || '_'}
-              </span>
+  // Blank word display
+  function WordWithBlank(){
+    if(!word)return null;
+    return(
+      <div style={{direction:'ltr',display:'flex',gap:'6px',justifyContent:'center',alignItems:'flex-end'}}>
+        {word.split('').map((ch,i)=>{
+          if(i!==blankIdx)return(
+            <div key={i} className="w-11 bg-white/20 rounded-xl flex items-center justify-center" style={{minWidth:'44px',minHeight:'52px'}}>
+              <span className="text-4xl font-extrabold text-white leading-none">{ch.toUpperCase()}</span>
+            </div>
+          );
+          const fl=filledLetter;
+          const isRight=fl&&wasCorrectA;
+          const isWrong2=fl&&!wasCorrectA&&wrongLetters.includes(fl);
+          return(
+            <div key={i} className={`rounded-xl border-4 flex items-center justify-center transition-all ${fl?(isRight?'bg-yellow-300 border-yellow-200':'bg-red-400 border-red-300'):'bg-white/10 border-white border-dashed'}`} style={{minWidth:'44px',minHeight:'52px'}}>
+              <span className={`text-4xl font-extrabold leading-none ${fl?'text-white':'text-white/40'}`}>{fl||'_'}</span>
             </div>
           );
         })}
@@ -539,7 +428,36 @@ function SpellingTab() {
     );
   }
 
-  if (done) return (
+  /* ─── LEARN PHASE ─── */
+  if(phase==="learn"){
+    const lw=SPELLING_WORDS[learnIdx];
+    return(
+      <div className="flex flex-col items-center gap-4 px-4 pt-6">
+        <div className="w-full flex items-center justify-between">
+          <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">{learnIdx+1} / {SPELLING_WORDS.length}</div>
+          <h2 className="text-lg font-extrabold text-green-700">לומדים מילים</h2>
+          <div className="w-16"/>
+        </div>
+        <div className="w-full bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-6 flex flex-col items-center gap-4 shadow-lg">
+          <div className="text-6xl">{SP_EMOJI[lw]||'📝'}</div>
+          <WordBoxes word={lw}/>
+          <div className="text-2xl font-bold text-yellow-200">{SP_HE[lw]}</div>
+          <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speak(lw)}>🔊 שמע שוב</button>
+        </div>
+        <div className="flex gap-3 w-full">
+          <button className={`btn-tap flex-1 py-3 rounded-2xl font-bold text-lg ${learnIdx===0?'bg-gray-100 text-gray-400':'bg-green-100 text-green-700'}`} disabled={learnIdx===0} onClick={()=>setLearnIdx(i=>i-1)}>← הקודם</button>
+          {learnIdx<SPELLING_WORDS.length-1
+            ?<button className="btn-tap flex-1 bg-green-500 text-white py-3 rounded-2xl font-bold text-lg" onClick={()=>setLearnIdx(i=>i+1)}>הבא →</button>
+            :<button className="btn-tap flex-1 bg-yellow-400 text-white py-3 rounded-2xl font-bold" onClick={startPractice}>לתרגול! 🚀</button>
+          }
+        </div>
+        <button className="btn-tap w-full border-2 border-green-300 text-green-600 py-3 rounded-2xl font-bold" onClick={startPractice}>דלג לתרגול ←</button>
+      </div>
+    );
+  }
+
+  /* ─── DONE ─── */
+  if(done)return(
     <div className="flex flex-col items-center justify-center h-80 gap-5 px-6">
       <div className="text-6xl bounce-in">🏆</div>
       <p className="text-2xl font-extrabold text-green-600 text-center">כל הכבוד! סיימת!</p>
@@ -547,309 +465,519 @@ function SpellingTab() {
         <div className="text-4xl font-extrabold text-green-700">{score.c}/{score.t}</div>
         <div className="text-green-500 font-bold">תשובות נכונות</div>
       </div>
-      <button className="btn-tap bg-green-500 text-white px-8 py-3 rounded-2xl font-bold text-lg"
-        onClick={restart}>🔄 שחק שוב</button>
+      <div className="flex gap-3 w-full">
+        <button className="btn-tap flex-1 bg-green-200 text-green-800 py-3 rounded-2xl font-bold" onClick={()=>{setPhase("learn");setLearnIdx(0);}}>📚 לימוד שוב</button>
+        <button className="btn-tap flex-1 bg-green-500 text-white py-3 rounded-2xl font-bold" onClick={()=>{restart();setPhase("practice");}}>🔄 תרגול שוב</button>
+      </div>
     </div>
   );
 
-  return (
+  /* ─── PRACTICE PHASE ─── */
+  return(
     <div className="flex flex-col items-center gap-4 px-4 pt-6">
       <div className="w-full flex items-center justify-between">
-        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">
-          {qIdx + 1} / {queue.length}
-        </div>
-        <h2 className="text-lg font-extrabold text-green-700">איות</h2>
-        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">
-          {score.c}/{score.t}
-        </div>
+        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">{qIdx+1} / {queue.length}</div>
+        <h2 className="text-lg font-extrabold text-green-700">תרגול איות</h2>
+        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">{score.c}/{score.t}</div>
       </div>
 
+      {/* mode selector */}
       <div className="flex w-full bg-green-100 rounded-2xl p-1 gap-1">
-        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-sm transition-all ${mode === 'A' ? 'bg-green-500 text-white shadow' : 'text-green-700'}`}
-          onClick={() => { setMode('A'); restart(); }}>✏️ אות חסרה</button>
-        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-sm transition-all ${mode === 'B' ? 'bg-green-500 text-white shadow' : 'text-green-700'}`}
-          onClick={() => { setMode('B'); restart(); }}>🎧 שמע ואייית</button>
+        {[["A","✏️ אות חסרה"],["B","🎧 שמע"],["C","🇮🇱 עברית"]].map(([m,label])=>(
+          <button key={m} className={`btn-tap flex-1 py-2 rounded-xl font-bold text-xs transition-all ${practiceMode===m?'bg-green-500 text-white shadow':'text-green-700'}`}
+            onClick={()=>{setPracticeMode(m);restart();}}>{label}</button>
+        ))}
+        <button className="btn-tap px-2 py-2 rounded-xl text-xs text-green-600 border border-green-300" onClick={()=>{setPhase("learn");setLearnIdx(0);}}>📚</button>
       </div>
 
-      {/* ── MODE A ── */}
-      {word && mode === 'A' && !showRevealA && (
-        <>
-          <div className="w-full bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-5 flex flex-col items-center gap-4 shadow-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-4xl">{SPELLING_EMOJIS[word] || '📝'}</span>
-              <span className="text-white font-bold text-sm opacity-90">השלם את האות החסרה:</span>
-            </div>
-            {renderWordWithBlank()}
-            <Hearts remaining={finishedA ? (wasCorrectA ? MAX_ATTEMPTS : 0) : attemptsLeftA} />
+      {/* MODE A: missing letter */}
+      {word&&practiceMode==='A'&&!showRevealA&&(<>
+        <div className="w-full bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-5 flex flex-col items-center gap-4 shadow-lg">
+          <div className="flex items-center gap-2"><span className="text-4xl">{SP_EMOJI[word]||'📝'}</span><span className="text-white font-bold text-sm opacity-90">השלם את האות החסרה:</span></div>
+          <WordWithBlank/>
+          <Hearts remaining={finishedA?(wasCorrectA?MAX_ATT:0):attLeftA}/>
+        </div>
+        {!finishedA&&wrongLetters.length>0&&<div className="w-full text-center text-sm font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">{rnd(WRONG_MSGS)} — נשארו {attLeftA} ניסיונות</div>}
+        <div style={{direction:'ltr',display:'flex',flexWrap:'wrap',gap:'8px',justifyContent:'center',width:'100%'}}>
+          {LETTERS.map(l=>{
+            const isWrong=wrongLetters.includes(l);
+            const isCorrectL=l===word[blankIdx].toUpperCase();
+            let cls="btn-tap w-12 h-12 rounded-xl font-extrabold text-lg flex items-center justify-center border-2 transition-all ";
+            if(finishedA&&isCorrectL)cls+="bg-green-400 border-green-500 text-white";
+            else if(isWrong)cls+="bg-red-200 border-red-300 text-red-400";
+            else if(finishedA)cls+="bg-gray-100 border-gray-200 text-gray-300";
+            else cls+="bg-white border-green-200 text-green-700 active:bg-green-50";
+            return <button key={l} className={cls} onClick={()=>handleLetterPick(l)}>{l}</button>;
+          })}
+        </div>
+      </>)}
+      {word&&practiceMode==='A'&&showRevealA&&<RevealCard word={word} wasCorrect={wasCorrectA} onNext={advanceNext}/>}
+
+      {/* MODE B: hear and type */}
+      {word&&practiceMode==='B'&&!finishedBC&&(<>
+        <div className="w-full bg-gradient-to-br from-teal-400 to-green-500 rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg">
+          <div className="flex items-center gap-2"><span className="text-4xl">{SP_EMOJI[word]||'📝'}</span><span className="text-white font-bold text-sm opacity-90">הקשב ואייית:</span></div>
+          <div className="text-5xl">🎧</div>
+          <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speak(word)}>🔊 שמע שוב</button>
+          <Hearts remaining={attLeftBC}/>
+        </div>
+        {lastWrong&&<div className="w-full text-center text-sm font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">{rnd(WRONG_MSGS)} — נשארו {attLeftBC} ניסיונות</div>}
+        <div className="w-full flex gap-2">
+          <input ref={inputRef} dir="ltr" type="text" value={typed} onChange={e=>setTyped(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSubmit()} placeholder="כתוב את המילה..." className="flex-1 border-2 border-green-300 rounded-2xl px-4 py-3 text-xl font-bold text-center focus:outline-none focus:border-green-500" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"/>
+          <button className="btn-tap bg-green-500 text-white px-5 rounded-2xl font-bold text-lg" onClick={handleSubmit}>✓</button>
+        </div>
+      </>)}
+      {word&&practiceMode==='B'&&finishedBC&&<RevealCard word={word} wasCorrect={wasCorrectBC} onNext={advanceNext}/>}
+
+      {/* MODE C: Hebrew → type English */}
+      {word&&practiceMode==='C'&&!finishedBC&&(<>
+        <div className="w-full bg-gradient-to-br from-blue-400 to-teal-500 rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg">
+          <div className="text-white font-bold text-sm opacity-90">כתוב את המילה האנגלית:</div>
+          <div className="text-6xl">{SP_EMOJI[word]||'📝'}</div>
+          <div className="text-3xl font-bold text-yellow-200">{SP_HE[word]}</div>
+          <div style={{direction:'ltr',display:'flex',gap:'4px',justifyContent:'center'}}>
+            {word.split('').map((_,i)=><div key={i} className="w-9 h-9 border-b-4 border-white/60"/>)}
           </div>
-
-          {!finishedA && wrongLetters.length > 0 && (
-            <div className="w-full text-center text-base font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">
-              {randomMsg(WRONG_MSGS)} — נשארו {attemptsLeftA} ניסיונות
-            </div>
-          )}
-
-          <div style={{ direction: 'ltr', display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', width: '100%' }}>
-            {LETTERS.map(l => {
-              const isWrong = wrongLetters.includes(l);
-              const isCorrectLetter = l === word[blankIdx].toUpperCase();
-              let cls = "btn-tap w-12 h-12 rounded-xl font-extrabold text-lg flex items-center justify-center border-2 transition-all ";
-              if (finishedA && isCorrectLetter) cls += "bg-green-400 border-green-500 text-white";
-              else if (isWrong) cls += "bg-red-200 border-red-300 text-red-400";
-              else if (finishedA) cls += "bg-gray-100 border-gray-200 text-gray-300";
-              else cls += "bg-white border-green-200 text-green-700 active:bg-green-50";
-              return <button key={l} className={cls} onClick={() => handleLetterPick(l)}>{l}</button>;
-            })}
-          </div>
-        </>
-      )}
-
-      {word && mode === 'A' && showRevealA && (
-        <WordRevealCard word={word} wasCorrect={wasCorrectA} onNext={advanceNext} />
-      )}
-
-      {/* ── MODE B ── */}
-      {word && mode === 'B' && !finishedB && (
-        <>
-          <div className="w-full bg-gradient-to-br from-teal-400 to-green-500 rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-4xl">{SPELLING_EMOJIS[word] || '📝'}</span>
-              <span className="text-white font-bold text-sm opacity-90">הקשב ואייית את המילה:</span>
-            </div>
-            <div className="text-5xl">🎧</div>
-            <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold"
-              onClick={() => speak(word)}>🔊 שמע שוב</button>
-            <Hearts remaining={attemptsLeftB} />
-          </div>
-
-          {lastWrongTyped && (
-            <div className="w-full text-center text-base font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">
-              {randomMsg(WRONG_MSGS)} — נשארו {attemptsLeftB} ניסיונות
-            </div>
-          )}
-          <div className="w-full flex gap-2">
-            <input ref={inputRef} dir="ltr" type="text" value={typed}
-              onChange={e => setTyped(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-              placeholder="כתוב את המילה..."
-              className="flex-1 border-2 border-green-300 rounded-2xl px-4 py-3 text-xl font-bold text-center focus:outline-none focus:border-green-500"
-              autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"
-            />
-            <button className="btn-tap bg-green-500 text-white px-5 rounded-2xl font-bold text-lg"
-              onClick={handleSubmit}>✓</button>
-          </div>
-        </>
-      )}
-
-      {word && mode === 'B' && finishedB && (
-        <WordRevealCard word={word} wasCorrect={wasCorrectB} onNext={advanceNext} />
-      )}
+          <Hearts remaining={attLeftBC}/>
+        </div>
+        {lastWrong&&<div className="w-full text-center text-sm font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">{rnd(WRONG_MSGS)} — נשארו {attLeftBC} ניסיונות</div>}
+        <div className="w-full flex gap-2">
+          <input ref={inputRef} dir="ltr" type="text" value={typed} onChange={e=>setTyped(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSubmit()} placeholder="כתוב באנגלית..." className="flex-1 border-2 border-blue-300 rounded-2xl px-4 py-3 text-xl font-bold text-center focus:outline-none focus:border-blue-500" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"/>
+          <button className="btn-tap bg-blue-500 text-white px-5 rounded-2xl font-bold text-lg" onClick={handleSubmit}>✓</button>
+        </div>
+      </>)}
+      {word&&practiceMode==='C'&&finishedBC&&<RevealCard word={word} wasCorrect={wasCorrectBC} onNext={advanceNext}/>}
     </div>
   );
 }
 
-// ─── TAB 4: LETTERS ──────────────────────────────────────────────────────────
-function LettersTab() {
-  const [mode, setMode] = useState("A");
-  const [options, setOptions] = useState([]);
-  const [correct, setCorrect] = useState(null);
-  const [wrongPicks, setWrongPicks] = useState([]);
-  const [finished, setFinished] = useState(false);
-  const [wasCorrect, setWasCorrect] = useState(false);
-  const [score, setScore] = useState({ c: 0, t: 0 });
-  const [qCount, setQCount] = useState(0);
-  const [currentVocab, setCurrentVocab] = useState(null);
-  const timerRef = useRef(null);
+/* ══════════════════════════ TAB 4: LETTERS ════════════════ */
+function LettersTab(){
+  const [mode,setMode]=useState("A");
+  const [options,setOptions]=useState([]);
+  const [correct,setCorrect]=useState(null);
+  const [wrongPicks,setWrongPicks]=useState([]);
+  const [finished,setFinished]=useState(false);
+  const [wasCorrect,setWasCorrect]=useState(false);
+  const [score,setScore]=useState({c:0,t:0});
+  const [qCount,setQCount]=useState(0);
+  const [currentVocab,setCurrentVocab]=useState(null);
+  // Mode C: type the letter
+  const [typed,setTyped]=useState("");
+  const [attC,setAttC]=useState(0);
+  const [finishedC,setFinishedC]=useState(false);
+  const [wasCorrectC,setWasCorrectC]=useState(false);
+  const [showBothCases,setShowBothCases]=useState(false);
+  const timerRef=useRef(null);
+  const inputRef=useRef(null);
+  const attLeft=MAX_ATT-wrongPicks.length;
+  const attLeftC=MAX_ATT-attC;
 
-  const attemptsLeft = MAX_ATTEMPTS - wrongPicks.length;
-
-  function generateQuestion() {
-    setWrongPicks([]);
-    setFinished(false);
-    setWasCorrect(false);
-    if (mode === 'A') {
-      const correctLetter = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-      const wrongs = pickRandom(LETTERS, correctLetter, 3);
-      const opts = shuffle([correctLetter, ...wrongs]).map(l =>
-        Math.random() > 0.5 ? l : l.toLowerCase()
-      );
-      setOptions(opts);
-      setCorrect(correctLetter);
-      setTimeout(() => speak(correctLetter, "en-US", 0.7), 300);
+  useEffect(()=>{
+    setWrongPicks([]);setFinished(false);setWasCorrect(false);
+    setTyped("");setAttC(0);setFinishedC(false);setWasCorrectC(false);setShowBothCases(false);
+    if(mode==='A'){
+      const cl=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+      setOptions(shuffle([cl,...pickWrong(LETTERS,cl,3)]).map(l=>Math.random()>0.5?l:l.toLowerCase()));
+      setCorrect(cl);
+      setTimeout(()=>speakLetter(cl),300);
+    } else if(mode==='B'){
+      const v=VOCAB[Math.floor(Math.random()*VOCAB.length)];
+      setCurrentVocab(v);
+      const cl=v.en[0].toUpperCase();
+      setOptions(shuffle([cl,...pickWrong(LETTERS,cl,3)]));
+      setCorrect(cl);
     } else {
-      const vocab = VOCAB[Math.floor(Math.random() * VOCAB.length)];
-      setCurrentVocab(vocab);
-      const correctLetter = vocab.en[0].toUpperCase();
-      const wrongs = pickRandom(LETTERS, correctLetter, 3);
-      setOptions(shuffle([correctLetter, ...wrongs]));
-      setCorrect(correctLetter);
+      const cl=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+      setCorrect(cl);
+      setTimeout(()=>speakLetter(cl),300);
+    }
+  },[mode,qCount]);
+
+  function handleSelect(opt){
+    if(finished)return;
+    if(opt.toUpperCase()===correct.toUpperCase()){
+      setFinished(true);setWasCorrect(true);setScore(s=>({c:s.c+1,t:s.t+1}));
+      timerRef.current=setTimeout(()=>setQCount(n=>n+1),1500);
+    } else {
+      const nw=[...wrongPicks,opt.toUpperCase()];setWrongPicks(nw);
+      if(nw.length>=MAX_ATT){setFinished(true);setWasCorrect(false);setScore(s=>({c:s.c,t:s.t+1}));timerRef.current=setTimeout(()=>setQCount(n=>n+1),2000);}
     }
   }
 
-  useEffect(() => { generateQuestion(); }, [mode, qCount]);
-
-  function handleSelect(opt) {
-    if (finished) return;
-    const isCorrect = opt.toUpperCase() === correct.toUpperCase();
-    if (isCorrect) {
-      setFinished(true);
-      setWasCorrect(true);
-      setScore(s => ({ c: s.c + 1, t: s.t + 1 }));
-      timerRef.current = setTimeout(() => setQCount(n => n + 1), 1500);
-    } else {
-      const newWrong = [...wrongPicks, opt.toUpperCase()];
-      setWrongPicks(newWrong);
-      if (newWrong.length >= MAX_ATTEMPTS) {
-        setFinished(true);
-        setWasCorrect(false);
-        setScore(s => ({ c: s.c, t: s.t + 1 }));
-        timerRef.current = setTimeout(() => setQCount(n => n + 1), 2000);
-      }
+  function handleTypeSubmit(){
+    if(finishedC||!typed.trim())return;
+    const isOk=typed.trim().toUpperCase()===correct.toUpperCase();
+    if(isOk){setFinishedC(true);setWasCorrectC(true);setScore(s=>({c:s.c+1,t:s.t+1}));setShowBothCases(true);}
+    else{
+      const na=attC+1;setAttC(na);setTyped("");
+      if(na>=MAX_ATT){setFinishedC(true);setWasCorrectC(false);setScore(s=>({c:s.c,t:s.t+1}));setShowBothCases(true);}
     }
   }
 
-  return (
-    <div className="flex flex-col items-center gap-4 px-4 pt-6">
-      <div className="w-full flex items-center justify-between">
-        <div className="text-sm font-bold text-blue-600 bg-blue-100 rounded-xl px-3 py-1">
-          שאלה {qCount + 1}
-        </div>
-        <h2 className="text-lg font-extrabold text-blue-700">אותיות</h2>
-        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">
-          {score.c}/{score.t}
-        </div>
-      </div>
-
-      <div className="flex w-full bg-blue-100 rounded-2xl p-1 gap-1">
-        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-sm transition-all ${mode === 'A' ? 'bg-blue-500 text-white shadow' : 'text-blue-700'}`}
-          onClick={() => { setMode('A'); setQCount(n => n + 1); }}>🔊 שמע אות</button>
-        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-sm transition-all ${mode === 'B' ? 'bg-pink-500 text-white shadow' : 'text-blue-700'}`}
-          onClick={() => { setMode('B'); setQCount(n => n + 1); }}>🔤 אות ראשונה</button>
-      </div>
-
-      {mode === 'A' && correct && (
-        <>
-          <div className="w-full bg-gradient-to-br from-blue-400 to-indigo-500 rounded-3xl p-7 flex flex-col items-center gap-3 shadow-lg">
-            <div className="text-white font-bold text-sm opacity-80">איזו אות שמעת?</div>
-            <div className="text-7xl">🔊</div>
-            <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold"
-              onClick={() => speak(correct, "en-US", 0.7)}>שמע שוב</button>
-            <Hearts remaining={finished ? (wasCorrect ? MAX_ATTEMPTS : 0) : attemptsLeft} />
-          </div>
-
-          {finished && (
-            <div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${wasCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-              {wasCorrect ? randomMsg(CORRECT_MSGS) : `האות הנכונה: ${correct}`}
-            </div>
-          )}
-          {!finished && wrongPicks.length > 0 && (
-            <div className="w-full text-center text-base font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">
-              {randomMsg(WRONG_MSGS)} — נשארו {attemptsLeft} ניסיונות
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4 w-full">
-            {options.map((opt, i) => {
-              const isWrong = wrongPicks.includes(opt.toUpperCase());
-              const isRight = opt.toUpperCase() === correct.toUpperCase();
-              let cls = "btn-tap py-8 rounded-2xl font-extrabold text-5xl flex items-center justify-center border-2 transition-all ";
-              if (finished && isRight) cls += "bg-green-400 border-green-500 text-white";
-              else if (isWrong) cls += "bg-red-200 border-red-300 text-red-400";
-              else if (finished) cls += "bg-gray-100 border-gray-200 text-gray-300";
-              else cls += "bg-white border-blue-200 text-blue-700";
-              return <button key={i} className={cls} onClick={() => handleSelect(opt)}>{opt}</button>;
-            })}
-          </div>
-        </>
-      )}
-
-      {mode === 'B' && currentVocab && (
-        <>
-          <div className="w-full bg-gradient-to-br from-pink-400 to-rose-500 rounded-3xl p-7 flex flex-col items-center gap-3 shadow-lg">
-            <div className="text-white font-bold text-sm opacity-80">באיזו אות מתחילה המילה?</div>
-            <div className="text-7xl leading-none">{currentVocab.emoji}</div>
-            <div dir="ltr" className="text-white font-bold text-xl">{currentVocab.en}</div>
-            <Hearts remaining={finished ? (wasCorrect ? MAX_ATTEMPTS : 0) : attemptsLeft} />
-          </div>
-
-          {finished && (
-            <div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${wasCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-              {wasCorrect ? randomMsg(CORRECT_MSGS) : `האות הנכונה: ${correct}`}
-            </div>
-          )}
-          {!finished && wrongPicks.length > 0 && (
-            <div className="w-full text-center text-base font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">
-              {randomMsg(WRONG_MSGS)} — נשארו {attemptsLeft} ניסיונות
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4 w-full">
-            {options.map((opt, i) => {
-              const isWrong = wrongPicks.includes(opt.toUpperCase());
-              const isRight = opt.toUpperCase() === correct.toUpperCase();
-              let cls = "btn-tap py-8 rounded-2xl font-extrabold text-5xl flex items-center justify-center border-2 transition-all ";
-              if (finished && isRight) cls += "bg-green-400 border-green-500 text-white";
-              else if (isWrong) cls += "bg-red-200 border-red-300 text-red-400";
-              else if (finished) cls += "bg-gray-100 border-gray-200 text-gray-300";
-              else cls += "bg-white border-pink-200 text-pink-700";
-              return <button key={i} className={cls} onClick={() => handleSelect(opt)}>{opt}</button>;
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── MAIN APP ─────────────────────────────────────────────────────────────────
-const TABS = [
-  { id: 'flash',   label: 'כרטיסיות', icon: '🃏', color: 'text-purple-600', activeBg: 'bg-purple-100' },
-  { id: 'picture', label: 'תמונות',   icon: '🖼️', color: 'text-orange-500', activeBg: 'bg-orange-100' },
-  { id: 'spell',   label: 'איות',     icon: '✏️', color: 'text-green-600',  activeBg: 'bg-green-100'  },
-  { id: 'letters', label: 'אותיות',   icon: '🔤', color: 'text-blue-600',   activeBg: 'bg-blue-100'   },
-];
-
-function App() {
-  const [activeTab, setActiveTab] = useState('flash');
-
-  const headerColors = {
-    flash:   'from-purple-500 to-violet-600',
-    picture: 'from-orange-400 to-yellow-500',
-    spell:   'from-green-500 to-teal-500',
-    letters: 'from-blue-500 to-indigo-600',
+  const optBtnCls=(opt)=>{
+    const isWrong=wrongPicks.includes(opt.toUpperCase());
+    const isRight=opt.toUpperCase()===correct?.toUpperCase();
+    let cls="btn-tap py-7 rounded-2xl font-extrabold text-5xl flex items-center justify-center border-2 transition-all ";
+    if(finished&&isRight)cls+="bg-green-400 border-green-500 text-white";
+    else if(isWrong)cls+="bg-red-200 border-red-300 text-red-400";
+    else if(finished)cls+="bg-gray-100 border-gray-200 text-gray-300";
+    else cls+=mode==='B'?"bg-white border-pink-200 text-pink-700":"bg-white border-blue-200 text-blue-700";
+    return cls;
   };
 
-  return (
+  return(
+    <div className="flex flex-col items-center gap-4 px-4 pt-6">
+      <div className="w-full flex items-center justify-between">
+        <div className="text-sm font-bold text-blue-600 bg-blue-100 rounded-xl px-3 py-1">שאלה {qCount+1}</div>
+        <h2 className="text-lg font-extrabold text-blue-700">אותיות</h2>
+        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">{score.c}/{score.t}</div>
+      </div>
+      <div className="flex w-full bg-blue-100 rounded-2xl p-1 gap-1">
+        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-xs transition-all ${mode==='A'?'bg-blue-500 text-white shadow':'text-blue-700'}`} onClick={()=>{setMode('A');setQCount(n=>n+1);}}>🔊 שמע אות</button>
+        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-xs transition-all ${mode==='B'?'bg-pink-500 text-white shadow':'text-blue-700'}`} onClick={()=>{setMode('B');setQCount(n=>n+1);}}>🔤 ראשונה</button>
+        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-xs transition-all ${mode==='C'?'bg-indigo-500 text-white shadow':'text-blue-700'}`} onClick={()=>{setMode('C');setQCount(n=>n+1);}}>✍️ כתוב</button>
+      </div>
+
+      {/* Mode A: hear → tap */}
+      {mode==='A'&&correct&&(<>
+        <div className="w-full bg-gradient-to-br from-blue-400 to-indigo-500 rounded-3xl p-7 flex flex-col items-center gap-3 shadow-lg">
+          <div className="text-white font-bold text-sm opacity-80">איזו אות שמעת?</div>
+          <div className="text-7xl">🔊</div>
+          <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speakLetter(correct)}>שמע שוב</button>
+          <Hearts remaining={finished?(wasCorrect?MAX_ATT:0):attLeft}/>
+        </div>
+        {finished&&<div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${wasCorrect?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}`}>{wasCorrect?rnd(CORRECT_MSGS):`האות הנכונה: ${correct}`}</div>}
+        {!finished&&wrongPicks.length>0&&<div className="w-full text-center text-sm font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700">{rnd(WRONG_MSGS)} — נשארו {attLeft} ניסיונות</div>}
+        <div className="grid grid-cols-2 gap-4 w-full">{options.map((opt,i)=><button key={i} className={optBtnCls(opt)} onClick={()=>handleSelect(opt)}>{opt}</button>)}</div>
+      </>)}
+
+      {/* Mode B: emoji → first letter */}
+      {mode==='B'&&currentVocab&&(<>
+        <div className="w-full bg-gradient-to-br from-pink-400 to-rose-500 rounded-3xl p-7 flex flex-col items-center gap-3 shadow-lg">
+          <div className="text-white font-bold text-sm opacity-80">באיזו אות מתחילה המילה?</div>
+          <div className="text-7xl leading-none">{currentVocab.emoji}</div>
+          <div dir="ltr" className="text-white font-bold text-xl">{currentVocab.en}</div>
+          <Hearts remaining={finished?(wasCorrect?MAX_ATT:0):attLeft}/>
+        </div>
+        {finished&&<div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${wasCorrect?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}`}>{wasCorrect?rnd(CORRECT_MSGS):`האות הנכונה: ${correct}`}</div>}
+        {!finished&&wrongPicks.length>0&&<div className="w-full text-center text-sm font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700">{rnd(WRONG_MSGS)} — נשארו {attLeft} ניסיונות</div>}
+        <div className="grid grid-cols-2 gap-4 w-full">{options.map((opt,i)=><button key={i} className={optBtnCls(opt)} onClick={()=>handleSelect(opt)}>{opt}</button>)}</div>
+      </>)}
+
+      {/* Mode C: hear → TYPE the letter */}
+      {mode==='C'&&correct&&(<>
+        <div className="w-full bg-gradient-to-br from-indigo-400 to-purple-500 rounded-3xl p-7 flex flex-col items-center gap-3 shadow-lg">
+          <div className="text-white font-bold text-sm opacity-80">שמע ואז כתוב את האות:</div>
+          <div className="text-7xl">🔊</div>
+          <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speakLetter(correct)}>שמע שוב</button>
+          <Hearts remaining={finishedC?(wasCorrectC?MAX_ATT:0):attLeftC}/>
+        </div>
+        {showBothCases&&(
+          <div className={`w-full rounded-3xl p-5 flex flex-col items-center gap-2 bounce-in ${wasCorrectC?'bg-green-100':'bg-red-100'}`}>
+            <div className={`text-lg font-bold ${wasCorrectC?'text-green-700':'text-red-600'}`}>{wasCorrectC?rnd(CORRECT_MSGS):`האות הנכונה:`}</div>
+            <div dir="ltr" className="flex gap-6 items-center">
+              <div className="text-center"><div className="text-5xl font-extrabold text-gray-700">{correct.toUpperCase()}</div><div className="text-sm text-gray-500">גדולה</div></div>
+              <div className="text-center"><div className="text-5xl font-extrabold text-gray-700">{correct.toLowerCase()}</div><div className="text-sm text-gray-500">קטנה</div></div>
+            </div>
+            <button className="btn-tap bg-indigo-500 text-white px-8 py-3 rounded-2xl font-bold mt-1" onClick={()=>setQCount(n=>n+1)}>הבא ←</button>
+          </div>
+        )}
+        {!finishedC&&(<>
+          {attC>0&&<div className="w-full text-center text-sm font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700">{rnd(WRONG_MSGS)} — נשארו {attLeftC} ניסיונות</div>}
+          <div className="w-full flex gap-2">
+            <input ref={inputRef} dir="ltr" type="text" value={typed} onChange={e=>setTyped(e.target.value.slice(-1))} onKeyDown={e=>e.key==='Enter'&&handleTypeSubmit()} maxLength={1} placeholder="?" className="flex-1 border-2 border-indigo-300 rounded-2xl px-4 py-4 text-4xl font-extrabold text-center focus:outline-none focus:border-indigo-500" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"/>
+            <button className="btn-tap bg-indigo-500 text-white px-6 rounded-2xl font-bold text-xl" onClick={handleTypeSubmit}>✓</button>
+          </div>
+          <div className="text-gray-400 text-sm text-center">כתוב אות גדולה או קטנה — שניהם נכון</div>
+        </>)}
+      </>)}
+    </div>
+  );
+}
+
+/* ══════════════════════════ TAB 5: LISTENING ══════════════ */
+function ListeningTab(){
+  const [mode,setMode]=useState("A"); // A=sentences B=prices C=ordering D=text
+  const [score,setScore]=useState({c:0,t:0});
+
+  return(
+    <div className="flex flex-col items-center gap-4 px-4 pt-6">
+      <div className="w-full flex items-center justify-between">
+        <div className="w-16"/>
+        <h2 className="text-lg font-extrabold text-red-700">האזנה</h2>
+        <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">{score.c}/{score.t}</div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 w-full">
+        {[["A","🎧 משפטים"],["B","💰 מחירים"],["C","📋 סדר"],["D","📖 טקסט"]].map(([m,label])=>(
+          <button key={m} className={`btn-tap py-2 rounded-xl font-bold text-sm transition-all border-2 ${mode===m?'bg-red-500 text-white border-red-500':'bg-white border-red-200 text-red-700'}`} onClick={()=>setMode(m)}>{label}</button>
+        ))}
+      </div>
+      {mode==='A'&&<SentencesMode score={score} setScore={setScore}/>}
+      {mode==='B'&&<PricesMode score={score} setScore={setScore}/>}
+      {mode==='C'&&<OrderingMode score={score} setScore={setScore}/>}
+      {mode==='D'&&<TextMode score={score} setScore={setScore}/>}
+    </div>
+  );
+}
+
+function SentencesMode({score,setScore}){
+  const [queue]=useState(()=>shuffle(LISTEN_SENTENCES));
+  const [idx,setIdx]=useState(0);
+  const [answered,setAnswered]=useState(null);
+  const [done,setDone]=useState(false);
+  const item=queue[idx];
+  useEffect(()=>{ if(item)setTimeout(()=>speak(item.sentence),200); },[idx]);
+  function answer(val){
+    if(answered!==null)return;
+    const ok=val===item.answer;
+    setAnswered(val);
+    setScore(s=>({c:s.c+(ok?1:0),t:s.t+1}));
+    setTimeout(()=>{ if(idx+1>=queue.length)setDone(true); else{setIdx(i=>i+1);setAnswered(null);} },1800);
+  }
+  if(done)return <DoneCard score={score} color="red" onRestart={()=>{setIdx(0);setAnswered(null);setDone(false);setScore({c:0,t:0});}}/>;
+  if(!item)return null;
+  return(
+    <div className="flex flex-col items-center gap-4 w-full">
+      <div className="text-sm text-gray-400 font-bold">{idx+1} / {queue.length}</div>
+      <div className="w-full bg-gradient-to-br from-red-400 to-rose-500 rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg">
+        <div className="text-white font-bold text-sm opacity-80">הקשב למשפט:</div>
+        <div className="text-5xl">🎧</div>
+        <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speak(item.sentence)}>🔊 שמע שוב</button>
+      </div>
+      <div className="w-full bg-gray-50 rounded-2xl p-4">
+        <div className="text-gray-500 text-sm text-center mb-2">האם המשפט הזה נכון?</div>
+        <div dir="ltr" className="text-center text-lg font-bold text-gray-800">"{item.statement}"</div>
+      </div>
+      <div className="grid grid-cols-2 gap-4 w-full">
+        {[true,false].map(val=>{
+          const label=val?'✅ נכון':'❌ לא נכון';
+          let cls="btn-tap py-5 rounded-2xl font-extrabold text-xl border-2 transition-all ";
+          if(answered===null)cls+="bg-white border-red-200 text-gray-700";
+          else if(val===item.answer)cls+="bg-green-400 border-green-500 text-white";
+          else if(answered===val)cls+="bg-red-400 border-red-500 text-white";
+          else cls+="bg-gray-100 border-gray-200 text-gray-300";
+          return <button key={String(val)} className={cls} onClick={()=>answer(val)}>{label}</button>;
+        })}
+      </div>
+      {answered!==null&&(
+        <div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${answered===item.answer?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}`}>
+          {answered===item.answer?rnd(CORRECT_MSGS):rnd(WRONG_MSGS)+` — התשובה: ${item.answer?'נכון':'לא נכון'}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PricesMode({score,setScore}){
+  const [queue]=useState(()=>shuffle(PRICES));
+  const [idx,setIdx]=useState(0);
+  const [selected,setSelected]=useState(null);
+  const [done,setDone]=useState(false);
+  const item=queue[idx];
+  useEffect(()=>{ if(item)setTimeout(()=>speak(item.spoken),200); },[idx]);
+  function pick(amt){
+    if(selected!==null)return;
+    const ok=amt===item.amount;
+    setSelected(amt);setScore(s=>({c:s.c+(ok?1:0),t:s.t+1}));
+    setTimeout(()=>{ if(idx+1>=queue.length)setDone(true); else{setIdx(i=>i+1);setSelected(null);} },1800);
+  }
+  if(done)return <DoneCard score={score} color="red" onRestart={()=>{setIdx(0);setSelected(null);setDone(false);setScore({c:0,t:0});}}/>;
+  if(!item)return null;
+  return(
+    <div className="flex flex-col items-center gap-4 w-full">
+      <div className="text-sm text-gray-400 font-bold">{idx+1} / {queue.length}</div>
+      <div className="w-full bg-gradient-to-br from-yellow-400 to-orange-400 rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg">
+        <div className="text-white font-bold text-sm">כמה עולה?</div>
+        <div className="text-5xl">💰</div>
+        <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speak(item.spoken)}>🔊 שמע שוב</button>
+      </div>
+      <div className="grid grid-cols-2 gap-4 w-full">
+        {item.options.map(amt=>{
+          let cls="btn-tap py-6 rounded-2xl font-extrabold text-3xl border-2 transition-all text-center ";
+          if(selected===null)cls+="bg-white border-yellow-200 text-gray-700";
+          else if(amt===item.amount)cls+="bg-green-400 border-green-500 text-white";
+          else if(selected===amt)cls+="bg-red-400 border-red-500 text-white";
+          else cls+="bg-gray-100 border-gray-200 text-gray-300";
+          return <button key={amt} className={cls} onClick={()=>pick(amt)}>${amt}</button>;
+        })}
+      </div>
+      {selected!==null&&<div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${selected===item.amount?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}`}>{selected===item.amount?rnd(CORRECT_MSGS):`המחיר: $${item.amount}`}</div>}
+    </div>
+  );
+}
+
+function OrderingMode({score,setScore}){
+  const [queue]=useState(()=>shuffle(LISTEN_ORDER));
+  const [idx,setIdx]=useState(0);
+  const [shuffled,setShuffled]=useState([]);
+  const [picks,setPicks]=useState([]); // words tapped in order
+  const [finished,setFinished]=useState(false);
+  const [wasCorrect,setWasCorrect]=useState(false);
+  const [done,setDone]=useState(false);
+
+  useEffect(()=>{
+    if(idx>=queue.length){setDone(true);return;}
+    const item=queue[idx];
+    setShuffled(shuffle(item.words));setPicks([]);setFinished(false);setWasCorrect(false);
+    // speak words one by one
+    item.words.forEach((w,i)=>setTimeout(()=>speak(w),500+(i*1200)));
+  },[idx,queue]);
+
+  function tap(w){
+    if(finished||picks.includes(w))return;
+    const np=[...picks,w];setPicks(np);
+    if(np.length===queue[idx].words.length){
+      const ok=np.join(',')=== queue[idx].words.join(',');
+      setFinished(true);setWasCorrect(ok);setScore(s=>({c:s.c+(ok?1:0),t:s.t+1}));
+    }
+  }
+
+  if(done)return <DoneCard score={score} color="red" onRestart={()=>{setIdx(0);setPicks([]);setFinished(false);setDone(false);setScore({c:0,t:0});}}/>;
+  if(!queue[idx])return null;
+  const item=queue[idx];
+  return(
+    <div className="flex flex-col items-center gap-4 w-full">
+      <div className="text-sm text-gray-400 font-bold">{idx+1} / {queue.length}</div>
+      <div className="w-full bg-gradient-to-br from-purple-400 to-indigo-500 rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg">
+        <div className="text-white font-bold text-sm">הקשב לסדר המילים ולחץ עליהן לפי הסדר:</div>
+        <div className="text-5xl">🎧</div>
+        <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>item.words.forEach((w,i)=>setTimeout(()=>speak(w),300+(i*1100)))}>🔊 שמע שוב</button>
+      </div>
+      {/* show pick order */}
+      <div style={{direction:'ltr',display:'flex',gap:'8px',justifyContent:'center',width:'100%'}}>
+        {item.words.map((_,i)=>(
+          <div key={i} className="flex-1 min-h-14 border-2 border-dashed border-purple-300 rounded-xl flex items-center justify-center">
+            {picks[i]?<span dir="ltr" className="text-lg font-extrabold text-purple-700">{picks[i]}</span>:<span className="text-purple-300 font-bold">{i+1}</span>}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-3 w-full">
+        {shuffled.map(w=>{
+          const pickNum=picks.indexOf(w);
+          const picked=pickNum>=0;
+          let cls="btn-tap py-4 rounded-2xl font-extrabold text-lg border-2 transition-all ";
+          if(finished&&wasCorrect&&picked)cls+="bg-green-400 border-green-500 text-white";
+          else if(finished&&!wasCorrect&&picked)cls+="bg-red-300 border-red-400 text-white";
+          else if(picked)cls+="bg-purple-300 border-purple-400 text-white";
+          else cls+="bg-white border-purple-200 text-purple-700";
+          return <button key={w} dir="ltr" className={cls} onClick={()=>tap(w)}>{picked?`${pickNum+1}. ${w}`:w}</button>;
+        })}
+      </div>
+      {finished&&<div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${wasCorrect?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}`}>
+        {wasCorrect?rnd(CORRECT_MSGS):`הסדר הנכון: ${item.words.join(' → ')}`}
+        {!wasCorrect&&<button className="block mx-auto mt-2 btn-tap bg-red-500 text-white px-5 py-2 rounded-xl font-bold text-base" onClick={()=>{setPicks([]);setFinished(false);}}>נסה שוב</button>}
+        {wasCorrect&&<button className="block mx-auto mt-2 btn-tap bg-green-500 text-white px-5 py-2 rounded-xl font-bold text-base" onClick={()=>setIdx(i=>i+1)}>הבא ←</button>}
+      </div>}
+    </div>
+  );
+}
+
+function TextMode({score,setScore}){
+  const [tIdx,setTIdx]=useState(0);
+  const [qIdx,setQIdx]=useState(0);
+  const [answered,setAnswered]=useState(null);
+  const [phase,setPhase]=useState("read"); // "read"|"quiz"
+  const text=TEXTS[tIdx];
+  const q=text?.questions[qIdx];
+
+  function answer(val){
+    if(answered!==null)return;
+    const ok=val===q.answer;
+    setAnswered(val);setScore(s=>({c:s.c+(ok?1:0),t:s.t+1}));
+    setTimeout(()=>{
+      if(qIdx+1>=text.questions.length){
+        if(tIdx+1>=TEXTS.length){setTIdx(0);setQIdx(0);setAnswered(null);setPhase("read");}
+        else{setTIdx(i=>i+1);setQIdx(0);setAnswered(null);setPhase("read");}
+      } else {setQIdx(i=>i+1);setAnswered(null);}
+    },1800);
+  }
+
+  if(phase==="read")return(
+    <div className="flex flex-col items-center gap-4 w-full">
+      <div className="w-full bg-gradient-to-br from-teal-400 to-cyan-500 rounded-3xl p-5 shadow-lg">
+        <div className="text-white font-extrabold text-lg text-center mb-3">{text.title}</div>
+        <div dir="ltr" className="text-white text-base leading-7 text-left">{text.text}</div>
+        <button className="btn-tap bg-white/30 text-white px-5 py-2 rounded-xl font-bold text-sm mt-3 w-full" onClick={()=>speak(text.text,0.8)}>🔊 שמע את הטקסט</button>
+      </div>
+      <button className="btn-tap w-full bg-teal-500 text-white py-4 rounded-2xl font-extrabold text-xl" onClick={()=>setPhase("quiz")}>שאלות ←</button>
+    </div>
+  );
+
+  if(!q)return null;
+  return(
+    <div className="flex flex-col items-center gap-4 w-full">
+      <div className="text-sm text-gray-400 font-bold">שאלה {qIdx+1} / {text.questions.length} | טקסט {tIdx+1}/{TEXTS.length}</div>
+      <div className="w-full bg-gradient-to-br from-teal-400 to-cyan-500 rounded-3xl p-4 shadow-lg">
+        <div className="text-white font-extrabold mb-1 text-center">{text.title}</div>
+        <div dir="ltr" className="text-white/80 text-xs leading-5 text-left">{text.text}</div>
+        <button className="btn-tap bg-white/30 text-white px-4 py-1 rounded-xl font-bold text-xs mt-2" onClick={()=>speak(text.text,0.8)}>🔊</button>
+      </div>
+      <div className="w-full bg-gray-50 rounded-2xl p-4">
+        <div className="text-gray-500 text-sm text-center mb-2">האם המשפט הזה נכון לפי הטקסט?</div>
+        <div dir="ltr" className="text-center text-lg font-bold text-gray-800">"{q.q}"</div>
+      </div>
+      <div className="grid grid-cols-2 gap-4 w-full">
+        {[true,false].map(val=>{
+          const label=val?'✅ נכון':'❌ לא נכון';
+          let cls="btn-tap py-5 rounded-2xl font-extrabold text-xl border-2 transition-all ";
+          if(answered===null)cls+="bg-white border-teal-200 text-gray-700";
+          else if(val===q.answer)cls+="bg-green-400 border-green-500 text-white";
+          else if(answered===val)cls+="bg-red-400 border-red-500 text-white";
+          else cls+="bg-gray-100 border-gray-200 text-gray-300";
+          return <button key={String(val)} className={cls} onClick={()=>answer(val)}>{label}</button>;
+        })}
+      </div>
+      {answered!==null&&<div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl bounce-in ${answered===q.answer?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}`}>{answered===q.answer?rnd(CORRECT_MSGS):rnd(WRONG_MSGS)+` — התשובה: ${q.answer?'נכון':'לא נכון'}`}</div>}
+    </div>
+  );
+}
+
+function DoneCard({score,color,onRestart}){
+  return(
+    <div className="flex flex-col items-center justify-center gap-5 py-8 px-6 w-full">
+      <div className="text-6xl bounce-in">🎊</div>
+      <p className={`text-2xl font-extrabold text-${color}-600 text-center`}>כל הכבוד! סיימת!</p>
+      <div className={`bg-${color}-100 rounded-2xl px-8 py-4 text-center`}>
+        <div className={`text-4xl font-extrabold text-${color}-700`}>{score.c}/{score.t}</div>
+        <div className={`text-${color}-500 font-bold`}>תשובות נכונות</div>
+      </div>
+      <button className={`btn-tap bg-${color}-500 text-white px-8 py-3 rounded-2xl font-bold text-lg`} onClick={onRestart}>🔄 שחק שוב</button>
+    </div>
+  );
+}
+
+/* ══════════════════════════ MAIN APP ════════════════════════ */
+const TABS=[
+  { id:'flash',   label:'כרטיסיות', icon:'🃏', color:'text-purple-600', activeBg:'bg-purple-100', header:'from-purple-500 to-violet-600' },
+  { id:'picture', label:'תמונות',   icon:'🖼️', color:'text-orange-500', activeBg:'bg-orange-100', header:'from-orange-400 to-yellow-500' },
+  { id:'spell',   label:'איות',     icon:'✏️', color:'text-green-600',  activeBg:'bg-green-100',  header:'from-green-500 to-teal-500'   },
+  { id:'letters', label:'אותיות',   icon:'🔤', color:'text-blue-600',   activeBg:'bg-blue-100',   header:'from-blue-500 to-indigo-600'  },
+  { id:'listen',  label:'האזנה',    icon:'🎧', color:'text-red-600',    activeBg:'bg-red-100',    header:'from-red-500 to-rose-600'     },
+];
+
+function App(){
+  const [activeTab,setActiveTab]=useState('flash');
+  const tab=TABS.find(t=>t.id===activeTab);
+  return(
     <div className="app-container shadow-2xl">
-      {/* App Header */}
-      <div className={`bg-gradient-to-r ${headerColors[activeTab]} px-4 py-4 flex items-center justify-center`}>
+      <div className={`bg-gradient-to-r ${tab.header} px-4 py-3 flex items-center justify-center`}>
         <h1 className="text-xl font-extrabold text-white tracking-wide">לומדים אנגלית 🎓</h1>
       </div>
-
-      {/* Content */}
-      <div className="content-area overflow-y-auto" style={{ maxHeight: 'calc(100dvh - 130px)' }}>
-        {activeTab === 'flash'   && <FlashcardsTab />}
-        {activeTab === 'picture' && <PictureQuizTab />}
-        {activeTab === 'spell'   && <SpellingTab />}
-        {activeTab === 'letters' && <LettersTab />}
+      <div className="content-area" style={{maxHeight:'calc(100dvh - 116px)'}}>
+        {activeTab==='flash'   &&<FlashcardsTab/>}
+        {activeTab==='picture' &&<PictureQuizTab/>}
+        {activeTab==='spell'   &&<SpellingTab/>}
+        {activeTab==='letters' &&<LettersTab/>}
+        {activeTab==='listen'  &&<ListeningTab/>}
       </div>
-
-      {/* Tab Bar */}
       <div className="tab-bar">
         <div className="flex">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              className={`btn-tap flex-1 flex flex-col items-center py-3 gap-0.5 transition-all ${activeTab === tab.id ? tab.activeBg : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span className="text-2xl leading-none">{tab.icon}</span>
-              <span className={`text-xs font-bold ${activeTab === tab.id ? tab.color : 'text-gray-400'}`}>
-                {tab.label}
-              </span>
-              {activeTab === tab.id && (
-                <div className={`w-1 h-1 rounded-full mt-0.5 ${tab.color.replace('text-', 'bg-')}`} />
-              )}
+          {TABS.map(t=>(
+            <button key={t.id} className={`btn-tap flex-1 flex flex-col items-center py-2 gap-0.5 transition-all ${activeTab===t.id?t.activeBg:''}`} onClick={()=>setActiveTab(t.id)}>
+              <span className="text-xl leading-none">{t.icon}</span>
+              <span className={`text-xs font-bold ${activeTab===t.id?t.color:'text-gray-400'}`}>{t.label}</span>
+              {activeTab===t.id&&<div className={`w-1 h-1 rounded-full ${t.color.replace('text-','bg-')}`}/>}
             </button>
           ))}
         </div>
@@ -858,7 +986,7 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
