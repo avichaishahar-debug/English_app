@@ -376,17 +376,17 @@ function SpellingTab(){
     if(finishedA)return;
     const isOk=letter.toUpperCase()===word[blankIdx].toUpperCase();
     if(isOk){
-      setFilledLetter(letter.toLowerCase());setFinishedA(true);setWasCorrectA(true);
+      setFilledLetter(blankIdx===0?letter.toUpperCase():letter.toLowerCase());setFinishedA(true);setWasCorrectA(true);
       setScore(s=>({c:s.c+1,t:s.t+1}));
       timerRef.current=setTimeout(()=>setShowRevealA(true),600);
     } else {
       const nw=[...wrongLetters,letter.toUpperCase()];setWrongLetters(nw);
-      setFilledLetter(letter.toLowerCase());
+      setFilledLetter(blankIdx===0?letter.toUpperCase():letter.toLowerCase());
       setTimeout(()=>setFilledLetter(""),700);
       if(nw.length>=MAX_ATT){
         setFinishedA(true);setWasCorrectA(false);
         setScore(s=>({c:s.c,t:s.t+1}));
-        setFilledLetter(word[blankIdx]);
+        setFilledLetter(blankIdx===0?word[0].toUpperCase():word[blankIdx]);
         timerRef.current=setTimeout(()=>setShowRevealA(true),800);
       }
     }
@@ -507,7 +507,7 @@ function SpellingTab(){
             else if(isWrong)cls+="bg-red-200 border-red-300 text-red-400";
             else if(finishedA)cls+="bg-gray-100 border-gray-200 text-gray-300";
             else cls+="bg-white border-green-200 text-green-700 active:bg-green-50";
-            return <button key={l} className={cls} onClick={()=>handleLetterPick(l)}>{l.toLowerCase()}</button>;
+            return <button key={l} className={cls} onClick={()=>handleLetterPick(l)}>{blankIdx===0?l:l.toLowerCase()}</button>;
           })}
         </div>
       </>)}
