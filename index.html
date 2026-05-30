@@ -555,19 +555,20 @@ function SpellingTab(){
 function LettersTab(){
   const [mode,setMode]=useState("A");
   const [options,setOptions]=useState([]);
-  const [correct,setCorrect]=useState(null);
+  const [correct,setCorrect]=useState(null);   // always stored UPPERCASE
   const [wrongPicks,setWrongPicks]=useState([]);
   const [finished,setFinished]=useState(false);
   const [wasCorrect,setWasCorrect]=useState(false);
   const [score,setScore]=useState({c:0,t:0});
   const [qCount,setQCount]=useState(0);
   const [currentVocab,setCurrentVocab]=useState(null);
-  // Mode C: type the letter
+  // Mode C
+  const [askedCase,setAskedCase]=useState("upper"); // "upper"|"lower"
   const [typed,setTyped]=useState("");
   const [attC,setAttC]=useState(0);
   const [finishedC,setFinishedC]=useState(false);
   const [wasCorrectC,setWasCorrectC]=useState(false);
-  const [showBothCases,setShowBothCases]=useState(false);
+  const [showReveal,setShowReveal]=useState(false);
   const timerRef=useRef(null);
   const inputRef=useRef(null);
   const attLeft=MAX_ATT-wrongPicks.length;
@@ -575,49 +576,58 @@ function LettersTab(){
 
   useEffect(()=>{
     setWrongPicks([]);setFinished(false);setWasCorrect(false);
-    setTyped("");setAttC(0);setFinishedC(false);setWasCorrectC(false);setShowBothCases(false);
+    setTyped("");setAttC(0);setFinishedC(false);setWasCorrectC(false);setShowReveal(false);
     if(mode==='A'){
+      // All options UPPERCASE — no mixed case
       const cl=LETTERS[Math.floor(Math.random()*LETTERS.length)];
-      setOptions(shuffle([cl,...pickWrong(LETTERS,cl,3)]).map(l=>Math.random()>0.5?l:l.toLowerCase()));
+      setOptions(shuffle([cl,...pickWrong(LETTERS,cl,3)])); // all uppercase
       setCorrect(cl);
       setTimeout(()=>speakLetter(cl),300);
     } else if(mode==='B'){
       const v=VOCAB[Math.floor(Math.random()*VOCAB.length)];
       setCurrentVocab(v);
       const cl=v.en[0].toUpperCase();
-      setOptions(shuffle([cl,...pickWrong(LETTERS,cl,3)]));
+      setOptions(shuffle([cl,...pickWrong(LETTERS,cl,3)])); // all uppercase
       setCorrect(cl);
     } else {
+      // Mode C: randomly ask for UPPER or LOWER
       const cl=LETTERS[Math.floor(Math.random()*LETTERS.length)];
+      const caseReq=Math.random()>0.5?"upper":"lower";
       setCorrect(cl);
+      setAskedCase(caseReq);
       setTimeout(()=>speakLetter(cl),300);
     }
   },[mode,qCount]);
 
+  // Modes A & B: tap correct letter button
   function handleSelect(opt){
     if(finished)return;
-    if(opt.toUpperCase()===correct.toUpperCase()){
+    // Exact match: opt is uppercase, correct is uppercase
+    if(opt===correct){
       setFinished(true);setWasCorrect(true);setScore(s=>({c:s.c+1,t:s.t+1}));
       timerRef.current=setTimeout(()=>setQCount(n=>n+1),1500);
     } else {
-      const nw=[...wrongPicks,opt.toUpperCase()];setWrongPicks(nw);
+      const nw=[...wrongPicks,opt];setWrongPicks(nw);
       if(nw.length>=MAX_ATT){setFinished(true);setWasCorrect(false);setScore(s=>({c:s.c,t:s.t+1}));timerRef.current=setTimeout(()=>setQCount(n=>n+1),2000);}
     }
   }
 
+  // Mode C: type the letter — exact case match
   function handleTypeSubmit(){
     if(finishedC||!typed.trim())return;
-    const isOk=typed.trim().toUpperCase()===correct.toUpperCase();
-    if(isOk){setFinishedC(true);setWasCorrectC(true);setScore(s=>({c:s.c+1,t:s.t+1}));setShowBothCases(true);}
-    else{
+    const expected=askedCase==='upper'?correct.toUpperCase():correct.toLowerCase();
+    const isOk=typed.trim()===expected;
+    if(isOk){
+      setFinishedC(true);setWasCorrectC(true);setScore(s=>({c:s.c+1,t:s.t+1}));setShowReveal(true);
+    } else {
       const na=attC+1;setAttC(na);setTyped("");
-      if(na>=MAX_ATT){setFinishedC(true);setWasCorrectC(false);setScore(s=>({c:s.c,t:s.t+1}));setShowBothCases(true);}
+      if(na>=MAX_ATT){setFinishedC(true);setWasCorrectC(false);setScore(s=>({c:s.c,t:s.t+1}));setShowReveal(true);}
     }
   }
 
   const optBtnCls=(opt)=>{
-    const isWrong=wrongPicks.includes(opt.toUpperCase());
-    const isRight=opt.toUpperCase()===correct?.toUpperCase();
+    const isWrong=wrongPicks.includes(opt);
+    const isRight=opt===correct;
     let cls="btn-tap py-7 rounded-2xl font-extrabold text-5xl flex items-center justify-center border-2 transition-all ";
     if(finished&&isRight)cls+="bg-green-400 border-green-500 text-white";
     else if(isWrong)cls+="bg-red-200 border-red-300 text-red-400";
@@ -639,10 +649,10 @@ function LettersTab(){
         <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-xs transition-all ${mode==='C'?'bg-indigo-500 text-white shadow':'text-blue-700'}`} onClick={()=>{setMode('C');setQCount(n=>n+1);}}>✍️ כתוב</button>
       </div>
 
-      {/* Mode A: hear → tap */}
+      {/* Mode A: hear → tap UPPERCASE */}
       {mode==='A'&&correct&&(<>
         <div className="w-full bg-gradient-to-br from-blue-400 to-indigo-500 rounded-3xl p-7 flex flex-col items-center gap-3 shadow-lg">
-          <div className="text-white font-bold text-sm opacity-80">איזו אות שמעת?</div>
+          <div className="text-white font-bold text-sm opacity-80">איזו אות שמעת? (אות גדולה)</div>
           <div className="text-7xl">🔊</div>
           <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speakLetter(correct)}>שמע שוב</button>
           <Hearts remaining={finished?(wasCorrect?MAX_ATT:0):attLeft}/>
@@ -652,10 +662,10 @@ function LettersTab(){
         <div className="grid grid-cols-2 gap-4 w-full">{options.map((opt,i)=><button key={i} className={optBtnCls(opt)} onClick={()=>handleSelect(opt)}>{opt}</button>)}</div>
       </>)}
 
-      {/* Mode B: emoji → first letter */}
+      {/* Mode B: emoji → first UPPERCASE letter */}
       {mode==='B'&&currentVocab&&(<>
         <div className="w-full bg-gradient-to-br from-pink-400 to-rose-500 rounded-3xl p-7 flex flex-col items-center gap-3 shadow-lg">
-          <div className="text-white font-bold text-sm opacity-80">באיזו אות מתחילה המילה?</div>
+          <div className="text-white font-bold text-sm opacity-80">באיזו אות מתחילה המילה? (אות גדולה)</div>
           <div className="text-7xl leading-none">{currentVocab.emoji}</div>
           <div dir="ltr" className="text-white font-bold text-xl">{currentVocab.en}</div>
           <Hearts remaining={finished?(wasCorrect?MAX_ATT:0):attLeft}/>
@@ -665,31 +675,49 @@ function LettersTab(){
         <div className="grid grid-cols-2 gap-4 w-full">{options.map((opt,i)=><button key={i} className={optBtnCls(opt)} onClick={()=>handleSelect(opt)}>{opt}</button>)}</div>
       </>)}
 
-      {/* Mode C: hear → TYPE the letter */}
+      {/* Mode C: hear → TYPE exact case */}
       {mode==='C'&&correct&&(<>
-        <div className="w-full bg-gradient-to-br from-indigo-400 to-purple-500 rounded-3xl p-7 flex flex-col items-center gap-3 shadow-lg">
-          <div className="text-white font-bold text-sm opacity-80">שמע ואז כתוב את האות:</div>
+        <div className={`w-full rounded-3xl p-7 flex flex-col items-center gap-3 shadow-lg ${askedCase==='upper'?'bg-gradient-to-br from-indigo-400 to-purple-500':'bg-gradient-to-br from-teal-400 to-cyan-600'}`}>
+          <div className="text-white font-extrabold text-base">
+            {askedCase==='upper'?'כתוב אות גדולה (Capital)':'כתוב אות קטנה (small)'}
+          </div>
+          <div dir="ltr" className="text-white/60 text-5xl font-extrabold">{askedCase==='upper'?'A B C':'a b c'}</div>
           <div className="text-7xl">🔊</div>
           <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speakLetter(correct)}>שמע שוב</button>
           <Hearts remaining={finishedC?(wasCorrectC?MAX_ATT:0):attLeftC}/>
         </div>
-        {showBothCases&&(
-          <div className={`w-full rounded-3xl p-5 flex flex-col items-center gap-2 bounce-in ${wasCorrectC?'bg-green-100':'bg-red-100'}`}>
-            <div className={`text-lg font-bold ${wasCorrectC?'text-green-700':'text-red-600'}`}>{wasCorrectC?rnd(CORRECT_MSGS):`האות הנכונה:`}</div>
-            <div dir="ltr" className="flex gap-6 items-center">
-              <div className="text-center"><div className="text-5xl font-extrabold text-gray-700">{correct.toUpperCase()}</div><div className="text-sm text-gray-500">גדולה</div></div>
-              <div className="text-center"><div className="text-5xl font-extrabold text-gray-700">{correct.toLowerCase()}</div><div className="text-sm text-gray-500">קטנה</div></div>
+
+        {showReveal&&(
+          <div className={`w-full rounded-3xl p-5 flex flex-col items-center gap-3 bounce-in ${wasCorrectC?'bg-green-100':'bg-red-100'}`}>
+            <div className={`text-lg font-bold ${wasCorrectC?'text-green-700':'text-red-600'}`}>{wasCorrectC?rnd(CORRECT_MSGS):askedCase==='upper'?`האות הגדולה הנכונה:`:`האות הקטנה הנכונה:`}</div>
+            <div dir="ltr" className="flex gap-8 items-end">
+              <div className="text-center">
+                <div className={`text-6xl font-extrabold ${askedCase==='upper'?'text-indigo-700':'text-gray-400'}`}>{correct.toUpperCase()}</div>
+                <div className={`text-sm font-bold mt-1 ${askedCase==='upper'?'text-indigo-600':'text-gray-400'}`}>גדולה {askedCase==='upper'?'← נדרש':''}</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-6xl font-extrabold ${askedCase==='lower'?'text-teal-700':'text-gray-400'}`}>{correct.toLowerCase()}</div>
+                <div className={`text-sm font-bold mt-1 ${askedCase==='lower'?'text-teal-600':'text-gray-400'}`}>קטנה {askedCase==='lower'?'← נדרש':''}</div>
+              </div>
             </div>
             <button className="btn-tap bg-indigo-500 text-white px-8 py-3 rounded-2xl font-bold mt-1" onClick={()=>setQCount(n=>n+1)}>הבא ←</button>
           </div>
         )}
+
         {!finishedC&&(<>
           {attC>0&&<div className="w-full text-center text-sm font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700">{rnd(WRONG_MSGS)} — נשארו {attLeftC} ניסיונות</div>}
           <div className="w-full flex gap-2">
-            <input ref={inputRef} dir="ltr" type="text" value={typed} onChange={e=>setTyped(e.target.value.slice(-1))} onKeyDown={e=>e.key==='Enter'&&handleTypeSubmit()} maxLength={1} placeholder="?" className="flex-1 border-2 border-indigo-300 rounded-2xl px-4 py-4 text-4xl font-extrabold text-center focus:outline-none focus:border-indigo-500" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck="false"/>
+            <input ref={inputRef} dir="ltr" type="text" value={typed}
+              onChange={e=>setTyped(e.target.value.slice(-1))}
+              onKeyDown={e=>e.key==='Enter'&&handleTypeSubmit()}
+              maxLength={1} placeholder="?"
+              className="flex-1 border-2 border-indigo-300 rounded-2xl px-4 py-4 text-4xl font-extrabold text-center focus:outline-none focus:border-indigo-500"
+              autoComplete="off" autoCorrect="off" autoCapitalize="none" spellCheck="false"/>
             <button className="btn-tap bg-indigo-500 text-white px-6 rounded-2xl font-bold text-xl" onClick={handleTypeSubmit}>✓</button>
           </div>
-          <div className="text-gray-400 text-sm text-center">כתוב אות גדולה או קטנה — שניהם נכון</div>
+          <div className={`text-sm font-bold text-center py-2 px-4 rounded-xl ${askedCase==='upper'?'bg-indigo-50 text-indigo-700':'bg-teal-50 text-teal-700'}`}>
+            {askedCase==='upper'?'כתוב אות גדולה בלבד — לדוגמה: A, B, C':'כתוב אות קטנה בלבד — לדוגמה: a, b, c'}
+          </div>
         </>)}
       </>)}
     </div>
