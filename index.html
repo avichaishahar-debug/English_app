@@ -162,7 +162,7 @@ function WordBoxes({word}){
     <div style={{direction:'ltr',display:'flex',gap:'6px',justifyContent:'center',flexWrap:'wrap'}}>
       {word.split('').map((ch,i)=>(
         <div key={i} className="w-11 h-13 bg-white/20 rounded-xl flex items-center justify-center" style={{minWidth:'44px',minHeight:'52px'}}>
-          <span className="text-4xl font-extrabold text-white leading-none">{ch.toUpperCase()}</span>
+          <span className="text-4xl font-extrabold text-white leading-none">{ch}</span>
         </div>
       ))}
     </div>
@@ -376,17 +376,17 @@ function SpellingTab(){
     if(finishedA)return;
     const isOk=letter.toUpperCase()===word[blankIdx].toUpperCase();
     if(isOk){
-      setFilledLetter(letter.toUpperCase());setFinishedA(true);setWasCorrectA(true);
+      setFilledLetter(letter.toLowerCase());setFinishedA(true);setWasCorrectA(true);
       setScore(s=>({c:s.c+1,t:s.t+1}));
       timerRef.current=setTimeout(()=>setShowRevealA(true),600);
     } else {
       const nw=[...wrongLetters,letter.toUpperCase()];setWrongLetters(nw);
-      setFilledLetter(letter.toUpperCase());
+      setFilledLetter(letter.toLowerCase());
       setTimeout(()=>setFilledLetter(""),700);
       if(nw.length>=MAX_ATT){
         setFinishedA(true);setWasCorrectA(false);
         setScore(s=>({c:s.c,t:s.t+1}));
-        setFilledLetter(word[blankIdx].toUpperCase());
+        setFilledLetter(word[blankIdx]);
         timerRef.current=setTimeout(()=>setShowRevealA(true),800);
       }
     }
@@ -412,7 +412,7 @@ function SpellingTab(){
         {word.split('').map((ch,i)=>{
           if(i!==blankIdx)return(
             <div key={i} className="w-11 bg-white/20 rounded-xl flex items-center justify-center" style={{minWidth:'44px',minHeight:'52px'}}>
-              <span className="text-4xl font-extrabold text-white leading-none">{ch.toUpperCase()}</span>
+              <span className="text-4xl font-extrabold text-white leading-none">{ch}</span>
             </div>
           );
           const fl=filledLetter;
@@ -507,7 +507,7 @@ function SpellingTab(){
             else if(isWrong)cls+="bg-red-200 border-red-300 text-red-400";
             else if(finishedA)cls+="bg-gray-100 border-gray-200 text-gray-300";
             else cls+="bg-white border-green-200 text-green-700 active:bg-green-50";
-            return <button key={l} className={cls} onClick={()=>handleLetterPick(l)}>{l}</button>;
+            return <button key={l} className={cls} onClick={()=>handleLetterPick(l)}>{l.toLowerCase()}</button>;
           })}
         </div>
       </>)}
