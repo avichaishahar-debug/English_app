@@ -98,8 +98,7 @@ function Learn(){
           {/* Front — English */}
           <div className="face absolute inset-0 rounded-3xl flex flex-col items-center justify-center gap-3 shadow-lg cursor-pointer"
             style={{background:'linear-gradient(140deg,#6D28D9,#8B5CF6)'}}>
-            <div className="text-6xl">{w.emoji}</div>
-            <div dir="ltr" className="text-3xl font-black text-white tracking-wide">{w.en}</div>
+            <div dir="ltr" className="text-4xl font-black text-white tracking-wide">{w.en}</div>
             <button className="tap bg-white/20 text-white/90 text-xs px-4 py-1.5 rounded-xl font-semibold"
               onClick={e=>{e.stopPropagation();speak(w.en);}}>🔊 שמע</button>
             <span className="text-violet-300 text-xs mt-1">לחץ לראות תרגום</span>
@@ -107,7 +106,6 @@ function Learn(){
           {/* Back — Hebrew */}
           <div className="face face-back absolute inset-0 rounded-3xl flex flex-col items-center justify-center gap-2 shadow-lg cursor-pointer"
             style={{background:'linear-gradient(140deg,#065F46,#059669)'}}>
-            <div className="text-6xl">{w.emoji}</div>
             <div className="text-3xl font-black text-white">{w.he}</div>
             <div dir="ltr" className="text-lg font-bold text-emerald-200">{w.en}</div>
             <div dir="ltr" className="text-xs text-emerald-300 italic text-center px-6 mt-1 leading-5">"{w.ex}"</div>
@@ -130,10 +128,9 @@ function Learn(){
       {/* Grid — all 8 words */}
       <div className="grid grid-cols-4 gap-2 pt-1">
         {WORDS.map((ww,j)=>(
-          <button key={j} className={`tap py-2 rounded-xl text-xs font-bold border-2 transition-all ${j===i?'border-violet-400 bg-violet-50 text-violet-700':known.has(j)?'border-emerald-300 bg-emerald-50 text-emerald-600':'border-gray-200 bg-white text-gray-500'}`}
+          <button key={j} className={`tap py-2 px-1 rounded-xl text-xs font-bold border-2 transition-all ${j===i?'border-violet-400 bg-violet-50 text-violet-700':known.has(j)?'border-emerald-300 bg-emerald-50 text-emerald-600':'border-gray-200 bg-white text-gray-500'}`}
             onClick={()=>setI(j)}>
-            <div className="text-lg">{ww.emoji}</div>
-            <div dir="ltr" className="truncate text-xs leading-tight mt-0.5">{ww.en}</div>
+            <div dir="ltr" className="truncate text-xs leading-tight">{ww.en}</div>
           </button>
         ))}
       </div>
@@ -208,7 +205,7 @@ function Match(){
             return(
               <button key={j} onClick={()=>{if(m)return;setSelEn(j);speak(w.en);}}
                 className={`tap py-3 px-2 rounded-2xl font-bold text-sm border-2 transition-all shadow-sm ${m?'bg-emerald-100 border-emerald-300 text-emerald-600':wr?'bg-red-100 border-red-300 text-red-500 shake':sw?'bg-blue-600 border-blue-600 text-white':'bg-white border-gray-200 text-gray-700'}`}>
-                <div dir="ltr" className="text-center leading-tight">{w.emoji} {w.en}</div>
+                <div dir="ltr" className="text-center leading-tight">{w.en}</div>
               </button>
             );
           })}
@@ -300,10 +297,9 @@ function Write(){
       <div className={`w-full rounded-2xl p-4 shadow-md transition-all ${st==='c'?'ring-4 ring-emerald-400':st==='w'||st==='r'?'ring-4 ring-red-300':''}`}
         style={{background:'linear-gradient(140deg,#065F46,#059669)'}}>
         <div className="flex items-center gap-4">
-          <div className="text-5xl">{word.emoji}</div>
-          <div className="flex flex-col gap-1 flex-1">
-            <div className="text-2xl font-black text-white">{word.he}</div>
-            <button className="tap bg-white/20 text-white px-3 py-1 rounded-lg text-xs font-semibold self-start"
+          <div className="flex flex-col gap-1 flex-1 items-center">
+            <div className="text-3xl font-black text-white">{word.he}</div>
+            <button className="tap bg-white/20 text-white px-3 py-1 rounded-lg text-xs font-semibold"
               onClick={()=>speak(word.en)}>🔊 שמע</button>
           </div>
         </div>
@@ -398,7 +394,6 @@ function Quiz(){
       <div className="w-full rounded-3xl p-6 flex flex-col items-center gap-3 shadow-lg"
         style={{background:'linear-gradient(140deg,#B45309,#D97706)'}}>
         <p className="text-amber-100 text-sm font-semibold">מה הפירוש בעברית?</p>
-        <div className="text-6xl">{word.emoji}</div>
         <div dir="ltr" className="text-4xl font-black text-white tracking-wide">{word.en}</div>
         <button className="tap bg-white/20 text-white px-5 py-1.5 rounded-xl text-sm font-semibold"
           onClick={()=>speak(word.en)}>🔊 שמע</button>
