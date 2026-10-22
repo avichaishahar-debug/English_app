@@ -284,11 +284,11 @@ function Write(){
 
   const underline=word.en.split('').map((c,j)=>
     c===' '?<span key={j} className="inline-block w-3"/>:
-    <span key={j} className={`inline-block w-7 mx-0.5 border-b-2 ${st==='c'?'border-emerald-400':st==='w'||st==='r'?'border-red-300':'border-gray-300'}`}/>
+    <span key={j} className={`inline-block w-6 mx-0.5 border-b-2 ${st==='c'?'border-emerald-400':st==='w'||st==='r'?'border-red-300':'border-white/50'}`}/>
   );
 
   return(
-    <div className="px-5 pt-6 flex flex-col gap-4">
+    <div className="px-5 pt-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <Hearts n={lives}/>
         <h2 className="text-sm font-black text-emerald-700 tracking-wider uppercase">כתיבה</h2>
@@ -296,15 +296,18 @@ function Write(){
       </div>
       <Bar n={i} total={queue.length} color="#059669"/>
 
-      {/* Card */}
-      <div className={`w-full rounded-3xl p-6 flex flex-col items-center gap-3 shadow-lg transition-all ${st==='c'?'ring-4 ring-emerald-400':st==='w'||st==='r'?'ring-4 ring-red-300':''}`}
+      {/* Compact card */}
+      <div className={`w-full rounded-2xl p-4 shadow-md transition-all ${st==='c'?'ring-4 ring-emerald-400':st==='w'||st==='r'?'ring-4 ring-red-300':''}`}
         style={{background:'linear-gradient(140deg,#065F46,#059669)'}}>
-        <p className="text-white/70 text-sm font-semibold">כתוב את המילה האנגלית:</p>
-        <div className="text-6xl">{word.emoji}</div>
-        <div className="text-3xl font-black text-white">{word.he}</div>
-        <div dir="ltr" className="flex items-end flex-wrap justify-center mt-1">{underline}</div>
-        <button className="tap bg-white/20 text-white px-5 py-1.5 rounded-xl text-sm font-semibold mt-1"
-          onClick={()=>speak(word.en)}>🔊 שמע</button>
+        <div className="flex items-center gap-4">
+          <div className="text-5xl">{word.emoji}</div>
+          <div className="flex flex-col gap-1 flex-1">
+            <div className="text-2xl font-black text-white">{word.he}</div>
+            <button className="tap bg-white/20 text-white px-3 py-1 rounded-lg text-xs font-semibold self-start"
+              onClick={()=>speak(word.en)}>🔊 שמע</button>
+          </div>
+        </div>
+        <div dir="ltr" className="flex items-end flex-wrap justify-center mt-3 mb-1">{underline}</div>
       </div>
 
       {/* Input */}
@@ -315,7 +318,7 @@ function Write(){
             onKeyDown={e=>e.key==='Enter'&&submit()}
             disabled={st==='c'}
             placeholder="כתוב כאן..."
-            className={`flex-1 border-2 rounded-2xl px-4 py-4 text-xl font-bold text-center outline-none transition-all ${
+            className={`flex-1 border-2 rounded-2xl px-4 py-3.5 text-xl font-bold text-center outline-none transition-all ${
               st==='c'?'border-emerald-400 bg-emerald-50 text-emerald-700':
               st==='w'?'border-red-300 bg-red-50 text-red-600':
               'border-gray-200 bg-white focus:border-emerald-400'}`}
