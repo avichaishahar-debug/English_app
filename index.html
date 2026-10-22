@@ -61,12 +61,47 @@ const VOCAB = [
   { en:"shoulder",  he:"כתף",         emoji:"💪" },
 ];
 
-const SPELLING_WORDS = [
-  "sit","bin","tin","stop","kid","hop","hot","dog","hut","sun",
-  "bug","cup","and","pet","big","mat","rest","run","mud","fast","red"
+const DICTATIONS = [
+  {
+    id:"cvc", name:"הכתבה 1 - מילים קצרות", emoji:"✏️",
+    words:[
+      {en:"sit",  he:"לשבת",       emoji:"🪑"},
+      {en:"bin",  he:"פח",         emoji:"🗑️"},
+      {en:"tin",  he:"קופסה",      emoji:"🥫"},
+      {en:"stop", he:"עצור",       emoji:"🛑"},
+      {en:"kid",  he:"ילד",        emoji:"👦"},
+      {en:"hop",  he:"לקפץ",       emoji:"🐸"},
+      {en:"hot",  he:"חם",         emoji:"🔥"},
+      {en:"dog",  he:"כלב",        emoji:"🐕"},
+      {en:"hut",  he:"בקתה",       emoji:"🛖"},
+      {en:"sun",  he:"שמש",        emoji:"☀️"},
+      {en:"bug",  he:"חרק",        emoji:"🐛"},
+      {en:"cup",  he:"כוס",        emoji:"☕"},
+      {en:"and",  he:"ו...",       emoji:"➕"},
+      {en:"pet",  he:"חיית מחמד", emoji:"🐾"},
+      {en:"big",  he:"גדול",       emoji:"🐘"},
+      {en:"mat",  he:"מחצלת",      emoji:"🏋️"},
+      {en:"rest", he:"מנוחה",      emoji:"😴"},
+      {en:"run",  he:"לרוץ",       emoji:"🏃"},
+      {en:"mud",  he:"בוץ",        emoji:"🟫"},
+      {en:"fast", he:"מהיר",       emoji:"⚡"},
+      {en:"red",  he:"אדום",       emoji:"🔴"},
+    ]
+  },
+  {
+    id:"prepositions", name:"הכתבה 2 - מילות יחס", emoji:"📍",
+    words:[
+      {en:"in",          he:"בתוך",    emoji:"📦"},
+      {en:"on",          he:"על",      emoji:"🛋️"},
+      {en:"under",       he:"מתחת",    emoji:"⬇️"},
+      {en:"next to",     he:"ליד",     emoji:"👫"},
+      {en:"behind",      he:"מאחורי",  emoji:"🫣"},
+      {en:"between",     he:"בין",     emoji:"🥪"},
+      {en:"over",        he:"מעל",     emoji:"🌈"},
+      {en:"in front of", he:"לפני",    emoji:"🚶"},
+    ]
+  },
 ];
-const SP_EMOJI = { sit:"🪑",bin:"🗑️",tin:"🥫",stop:"🛑",kid:"👦",hop:"🐸",hot:"🔥",dog:"🐕",hut:"🛖",sun:"☀️",bug:"🐛",cup:"☕",and:"➕",pet:"🐾",big:"🐘",mat:"🏋️",rest:"😴",run:"🏃",mud:"🟫",fast:"⚡",red:"🔴" };
-const SP_HE   = { sit:"לשבת",bin:"פח",tin:"קופסה",stop:"עצור",kid:"ילד",hop:"לקפץ",hot:"חם",dog:"כלב",hut:"בקתה",sun:"שמש",bug:"חרק",cup:"כוס",and:"ו...",pet:"חיית מחמד",big:"גדול",mat:"מחצלת",rest:"מנוחה",run:"לרוץ",mud:"בוץ",fast:"מהיר",red:"אדום" };
 
 const LETTERS = ["A","B","C","D","E","F","G","H","I","J","K","M","N","O","P","R","S","T","U"];
 
@@ -159,28 +194,30 @@ function Hearts({remaining}){
 
 function WordBoxes({word}){
   return (
-    <div style={{direction:'ltr',display:'flex',gap:'6px',justifyContent:'center',flexWrap:'wrap'}}>
+    <div style={{direction:'ltr',display:'flex',gap:'6px',justifyContent:'center',flexWrap:'wrap',alignItems:'center'}}>
       {word.split('').map((ch,i)=>(
-        <div key={i} className="w-11 h-13 bg-white/20 rounded-xl flex items-center justify-center" style={{minWidth:'44px',minHeight:'52px'}}>
-          <span className="text-4xl font-extrabold text-white leading-none">{ch}</span>
-        </div>
+        ch===' '
+          ? <div key={i} style={{width:'12px'}}/>
+          : <div key={i} className="w-11 bg-white/20 rounded-xl flex items-center justify-center" style={{minWidth:'44px',minHeight:'52px'}}>
+              <span className="text-4xl font-extrabold text-white leading-none">{ch}</span>
+            </div>
       ))}
     </div>
   );
 }
 
 function RevealCard({word,wasCorrect,onNext}){
-  useEffect(()=>{ speak(word); },[word]);
+  useEffect(()=>{ speak(word.en); },[word]);
   return (
     <div className="flex flex-col items-center gap-3 w-full bounce-in">
       <div className={`w-full rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg ${wasCorrect?'bg-gradient-to-br from-green-400 to-teal-500':'bg-gradient-to-br from-orange-400 to-red-400'}`}>
-        <div className="text-5xl">{SP_EMOJI[word]||'📝'}</div>
-        <WordBoxes word={word}/>
-        <div className="text-2xl font-bold text-white/90">{SP_HE[word]}</div>
-        <button className="btn-tap bg-white/30 text-white px-5 py-1.5 rounded-xl font-bold text-sm" onClick={()=>speak(word)}>🔊 שמע שוב</button>
+        <div className="text-5xl">{word.emoji||'📝'}</div>
+        <WordBoxes word={word.en}/>
+        <div className="text-2xl font-bold text-white/90">{word.he}</div>
+        <button className="btn-tap bg-white/30 text-white px-5 py-1.5 rounded-xl font-bold text-sm" onClick={()=>speak(word.en)}>🔊 שמע שוב</button>
       </div>
       <div className={`w-full text-center text-xl font-extrabold py-3 rounded-2xl ${wasCorrect?'bg-green-100 text-green-700':'bg-red-100 text-red-600'}`}>
-        {wasCorrect ? rnd(CORRECT_MSGS) : `המילה היא: ${word}`}
+        {wasCorrect ? rnd(CORRECT_MSGS) : `המילה היא: ${word.en}`}
       </div>
       <button className="btn-tap w-full bg-green-500 text-white py-4 rounded-2xl font-extrabold text-xl" onClick={onNext}>הבא ←</button>
     </div>
@@ -189,10 +226,16 @@ function RevealCard({word,wasCorrect,onNext}){
 
 /* ══════════════════════════ TAB 1: FLASHCARDS ═══════════════ */
 function FlashcardsTab(){
+  const [source,setSource]=useState("vocab");
   const [deck,setDeck]=useState(()=>VOCAB.map((v,i)=>({...v,id:i,known:false})));
   const [filterUnknown,setFilterUnknown]=useState(false);
   const [idx,setIdx]=useState(0);
   const [flipped,setFlipped]=useState(false);
+  useEffect(()=>{
+    const bc=source==="vocab"?VOCAB:DICTATIONS[parseInt(source)].words;
+    setDeck(bc.map((v,i)=>({...v,id:i,known:false})));
+    setIdx(0);setFlipped(false);setFilterUnknown(false);
+  },[source]);
   const cards=filterUnknown?deck.filter(c=>!c.known):deck;
   const card=cards[idx]||null;
   useEffect(()=>{setIdx(0);setFlipped(false);},[filterUnknown]);
@@ -211,6 +254,12 @@ function FlashcardsTab(){
         <div className="text-sm font-bold text-purple-600 bg-purple-100 rounded-xl px-3 py-1">{idx+1} / {cards.length}</div>
         <h2 className="text-lg font-extrabold text-purple-700">כרטיסיות</h2>
         <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">✓ {deck.filter(c=>c.known).length}</div>
+      </div>
+      <div className="flex w-full bg-purple-100 rounded-2xl p-1 gap-1">
+        <button className={`btn-tap flex-1 py-2 rounded-xl font-bold text-xs transition-all ${source==='vocab'?'bg-purple-500 text-white shadow':'text-purple-700'}`} onClick={()=>setSource('vocab')}>📚 אוצר מילים</button>
+        {DICTATIONS.map((d,i)=>(
+          <button key={d.id} className={`btn-tap flex-1 py-2 rounded-xl font-bold text-xs transition-all ${source===String(i)?'bg-purple-500 text-white shadow':'text-purple-700'}`} onClick={()=>setSource(String(i))}>{d.emoji} כתבה {i+1}</button>
+        ))}
       </div>
       <div className="flip-card w-full" style={{height:220}} onClick={()=>{setFlipped(f=>!f);if(!flipped)speak(card.en);}}>
         <div className={`flip-card-inner w-full h-full relative ${flipped?'flipped':''}`}>
@@ -326,11 +375,11 @@ function PictureQuizTab(){
 
 /* ══════════════════════════ TAB 3: SPELLING ════════════════ */
 function SpellingTab(){
-  const [phase,setPhase]=useState("learn"); // "learn"|"practice"
+  const [dictIdx,setDictIdx]=useState(0);
+  const [phase,setPhase]=useState("learn");
   const [learnIdx,setLearnIdx]=useState(0);
-  const [practiceMode,setPracticeMode]=useState("A"); // A=missing B=hear+type C=hebrew→en
-  // practice state
-  const [queue,setQueue]=useState(()=>shuffle(SPELLING_WORDS));
+  const [practiceMode,setPracticeMode]=useState("A");
+  const [queue,setQueue]=useState(()=>shuffle(DICTATIONS[0].words));
   const [qIdx,setQIdx]=useState(0);
   const [blankIdx,setBlankIdx]=useState(0);
   const [filledLetter,setFilledLetter]=useState("");
@@ -347,34 +396,40 @@ function SpellingTab(){
   const [done,setDone]=useState(false);
   const timerRef=useRef(null);
   const inputRef=useRef(null);
-  const word=queue[qIdx];
+  const words=DICTATIONS[dictIdx].words;
+  const wordObj=queue[qIdx];
   const attLeftA=MAX_ATT-wrongLetters.length;
   const attLeftBC=MAX_ATT-attB;
 
-  // learn phase: auto-speak
-  useEffect(()=>{ if(phase==="learn")speak(SPELLING_WORDS[learnIdx]); },[learnIdx,phase]);
+  useEffect(()=>{
+    setPhase("learn");setLearnIdx(0);
+    setQueue(shuffle(DICTATIONS[dictIdx].words));setQIdx(0);setScore({c:0,t:0});setDone(false);
+  },[dictIdx]);
+
+  useEffect(()=>{ if(phase==="learn")speak(DICTATIONS[dictIdx].words[learnIdx].en); },[learnIdx,phase,dictIdx]);
 
   useEffect(()=>{
     if(phase!=="practice")return;
     if(qIdx>=queue.length){setDone(true);return;}
-    const bi=Math.floor(Math.random()*queue[qIdx].length);
+    const w=queue[qIdx].en;
+    const nonSp=w.split('').map((c,i)=>c!==' '?i:-1).filter(i=>i>=0);
+    const bi=nonSp[Math.floor(Math.random()*nonSp.length)];
     setBlankIdx(bi);setFilledLetter("");setWrongLetters([]);
     setFinishedA(false);setWasCorrectA(false);setShowRevealA(false);
     setTyped("");setAttB(0);setLastWrong("");setFinishedBC(false);setWasCorrectBC(false);
-    if(practiceMode==="B")setTimeout(()=>speak(queue[qIdx]),200);
+    if(practiceMode==="B")setTimeout(()=>speak(queue[qIdx].en),200);
   },[qIdx,practiceMode,queue,phase]);
 
   function restart(){
     clearTimeout(timerRef.current);
-    setQueue(shuffle(SPELLING_WORDS));setQIdx(0);setScore({c:0,t:0});setDone(false);
+    setQueue(shuffle(DICTATIONS[dictIdx].words));setQIdx(0);setScore({c:0,t:0});setDone(false);
   }
   function startPractice(){setPhase("practice");restart();}
   function advanceNext(){setQIdx(i=>i+1);}
 
-  // Mode A: missing letter
   function handleLetterPick(letter){
-    if(finishedA)return;
-    const isOk=letter.toUpperCase()===word[blankIdx].toUpperCase();
+    if(finishedA||!wordObj)return;
+    const isOk=letter.toUpperCase()===wordObj.en[blankIdx].toUpperCase();
     if(isOk){
       setFilledLetter(blankIdx===0?letter.toUpperCase():letter.toLowerCase());setFinishedA(true);setWasCorrectA(true);
       setScore(s=>({c:s.c+1,t:s.t+1}));
@@ -386,16 +441,15 @@ function SpellingTab(){
       if(nw.length>=MAX_ATT){
         setFinishedA(true);setWasCorrectA(false);
         setScore(s=>({c:s.c,t:s.t+1}));
-        setFilledLetter(blankIdx===0?word[0].toUpperCase():word[blankIdx]);
+        setFilledLetter(blankIdx===0?wordObj.en[0].toUpperCase():wordObj.en[blankIdx]);
         timerRef.current=setTimeout(()=>setShowRevealA(true),800);
       }
     }
   }
 
-  // Mode B and C: type the word
   function handleSubmit(){
-    if(finishedBC||!typed.trim())return;
-    const isOk=typed.trim().toLowerCase()===word.toLowerCase();
+    if(finishedBC||!typed.trim()||!wordObj)return;
+    const isOk=typed.trim().toLowerCase()===wordObj.en.toLowerCase();
     if(isOk){
       setFinishedBC(true);setWasCorrectBC(true);setScore(s=>({c:s.c+1,t:s.t+1}));
     } else {
@@ -404,12 +458,13 @@ function SpellingTab(){
     }
   }
 
-  // Blank word display
   function WordWithBlank(){
-    if(!word)return null;
+    if(!wordObj)return null;
+    const wordStr=wordObj.en;
     return(
-      <div style={{direction:'ltr',display:'flex',gap:'6px',justifyContent:'center',alignItems:'flex-end'}}>
-        {word.split('').map((ch,i)=>{
+      <div style={{direction:'ltr',display:'flex',gap:'6px',justifyContent:'center',alignItems:'flex-end',flexWrap:'wrap'}}>
+        {wordStr.split('').map((ch,i)=>{
+          if(ch===' ')return <div key={i} style={{width:'14px'}}/>;
           if(i!==blankIdx)return(
             <div key={i} className="w-11 bg-white/20 rounded-xl flex items-center justify-center" style={{minWidth:'44px',minHeight:'52px'}}>
               <span className="text-4xl font-extrabold text-white leading-none">{ch}</span>
@@ -417,7 +472,6 @@ function SpellingTab(){
           );
           const fl=filledLetter;
           const isRight=fl&&wasCorrectA;
-          const isWrong2=fl&&!wasCorrectA&&wrongLetters.includes(fl);
           return(
             <div key={i} className={`rounded-xl border-4 flex items-center justify-center transition-all ${fl?(isRight?'bg-yellow-300 border-yellow-200':'bg-red-400 border-red-300'):'bg-white/10 border-white border-dashed'}`} style={{minWidth:'44px',minHeight:'52px'}}>
               <span className={`text-4xl font-extrabold leading-none ${fl?'text-white':'text-white/40'}`}>{fl||'_'}</span>
@@ -428,25 +482,35 @@ function SpellingTab(){
     );
   }
 
+  const dictSel=(
+    <div className="flex w-full bg-green-100 rounded-2xl p-1 gap-1">
+      {DICTATIONS.map((d,i)=>(
+        <button key={d.id} className={`btn-tap flex-1 py-2 rounded-xl font-bold text-xs transition-all ${dictIdx===i?'bg-green-600 text-white shadow':'text-green-700'}`}
+          onClick={()=>setDictIdx(i)}>{d.emoji} כתבה {i+1}</button>
+      ))}
+    </div>
+  );
+
   /* ─── LEARN PHASE ─── */
   if(phase==="learn"){
-    const lw=SPELLING_WORDS[learnIdx];
+    const lw=words[learnIdx];
     return(
       <div className="flex flex-col items-center gap-4 px-4 pt-6">
         <div className="w-full flex items-center justify-between">
-          <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">{learnIdx+1} / {SPELLING_WORDS.length}</div>
+          <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">{learnIdx+1} / {words.length}</div>
           <h2 className="text-lg font-extrabold text-green-700">לומדים מילים</h2>
           <div className="w-16"/>
         </div>
+        {dictSel}
         <div className="w-full bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-6 flex flex-col items-center gap-4 shadow-lg">
-          <div className="text-6xl">{SP_EMOJI[lw]||'📝'}</div>
-          <WordBoxes word={lw}/>
-          <div className="text-2xl font-bold text-yellow-200">{SP_HE[lw]}</div>
-          <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speak(lw)}>🔊 שמע שוב</button>
+          <div className="text-6xl">{lw.emoji||'📝'}</div>
+          <WordBoxes word={lw.en}/>
+          <div className="text-2xl font-bold text-yellow-200">{lw.he}</div>
+          <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speak(lw.en)}>🔊 שמע שוב</button>
         </div>
         <div className="flex gap-3 w-full">
           <button className={`btn-tap flex-1 py-3 rounded-2xl font-bold text-lg ${learnIdx===0?'bg-gray-100 text-gray-400':'bg-green-100 text-green-700'}`} disabled={learnIdx===0} onClick={()=>setLearnIdx(i=>i-1)}>← הקודם</button>
-          {learnIdx<SPELLING_WORDS.length-1
+          {learnIdx<words.length-1
             ?<button className="btn-tap flex-1 bg-green-500 text-white py-3 rounded-2xl font-bold text-lg" onClick={()=>setLearnIdx(i=>i+1)}>הבא →</button>
             :<button className="btn-tap flex-1 bg-yellow-400 text-white py-3 rounded-2xl font-bold" onClick={startPractice}>לתרגול! 🚀</button>
           }
@@ -481,7 +545,8 @@ function SpellingTab(){
         <div className="text-sm font-bold text-green-600 bg-green-100 rounded-xl px-3 py-1">{score.c}/{score.t}</div>
       </div>
 
-      {/* mode selector */}
+      {dictSel}
+
       <div className="flex w-full bg-green-100 rounded-2xl p-1 gap-1">
         {[["A","✏️ אות חסרה"],["B","🎧 שמע"],["C","🇮🇱 עברית"]].map(([m,label])=>(
           <button key={m} className={`btn-tap flex-1 py-2 rounded-xl font-bold text-xs transition-all ${practiceMode===m?'bg-green-500 text-white shadow':'text-green-700'}`}
@@ -490,10 +555,9 @@ function SpellingTab(){
         <button className="btn-tap px-2 py-2 rounded-xl text-xs text-green-600 border border-green-300" onClick={()=>{setPhase("learn");setLearnIdx(0);}}>📚</button>
       </div>
 
-      {/* MODE A: missing letter */}
-      {word&&practiceMode==='A'&&!showRevealA&&(<>
+      {wordObj&&practiceMode==='A'&&!showRevealA&&(<>
         <div className="w-full bg-gradient-to-br from-green-400 to-teal-500 rounded-3xl p-5 flex flex-col items-center gap-4 shadow-lg">
-          <div className="flex items-center gap-2"><span className="text-4xl">{SP_EMOJI[word]||'📝'}</span><span className="text-white font-bold text-sm opacity-90">השלם את האות החסרה:</span></div>
+          <div className="flex items-center gap-2"><span className="text-4xl">{wordObj.emoji||'📝'}</span><span className="text-white font-bold text-sm opacity-90">השלם את האות החסרה:</span></div>
           <WordWithBlank/>
           <Hearts remaining={finishedA?(wasCorrectA?MAX_ATT:0):attLeftA}/>
         </div>
@@ -501,7 +565,7 @@ function SpellingTab(){
         <div style={{direction:'ltr',display:'flex',flexWrap:'wrap',gap:'8px',justifyContent:'center',width:'100%'}}>
           {LETTERS.map(l=>{
             const isWrong=wrongLetters.includes(l);
-            const isCorrectL=l===word[blankIdx].toUpperCase();
+            const isCorrectL=l===wordObj.en[blankIdx].toUpperCase();
             let cls="btn-tap w-12 h-12 rounded-xl font-extrabold text-lg flex items-center justify-center border-2 transition-all ";
             if(finishedA&&isCorrectL)cls+="bg-green-400 border-green-500 text-white";
             else if(isWrong)cls+="bg-red-200 border-red-300 text-red-400";
@@ -511,14 +575,13 @@ function SpellingTab(){
           })}
         </div>
       </>)}
-      {word&&practiceMode==='A'&&showRevealA&&<RevealCard word={word} wasCorrect={wasCorrectA} onNext={advanceNext}/>}
+      {wordObj&&practiceMode==='A'&&showRevealA&&<RevealCard word={wordObj} wasCorrect={wasCorrectA} onNext={advanceNext}/>}
 
-      {/* MODE B: hear and type */}
-      {word&&practiceMode==='B'&&!finishedBC&&(<>
+      {wordObj&&practiceMode==='B'&&!finishedBC&&(<>
         <div className="w-full bg-gradient-to-br from-teal-400 to-green-500 rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg">
-          <div className="flex items-center gap-2"><span className="text-4xl">{SP_EMOJI[word]||'📝'}</span><span className="text-white font-bold text-sm opacity-90">הקשב ואייית:</span></div>
+          <div className="flex items-center gap-2"><span className="text-4xl">{wordObj.emoji||'📝'}</span><span className="text-white font-bold text-sm opacity-90">הקשב ואייית:</span></div>
           <div className="text-5xl">🎧</div>
-          <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speak(word)}>🔊 שמע שוב</button>
+          <button className="btn-tap bg-white/30 text-white px-6 py-2 rounded-xl font-bold" onClick={()=>speak(wordObj.en)}>🔊 שמע שוב</button>
           <Hearts remaining={attLeftBC}/>
         </div>
         {lastWrong&&<div className="w-full text-center text-sm font-bold py-2 rounded-2xl bg-yellow-50 text-yellow-700 bounce-in">{rnd(WRONG_MSGS)} — נשארו {attLeftBC} ניסיונות</div>}
@@ -527,16 +590,15 @@ function SpellingTab(){
           <button className="btn-tap bg-green-500 text-white px-5 rounded-2xl font-bold text-lg" onClick={handleSubmit}>✓</button>
         </div>
       </>)}
-      {word&&practiceMode==='B'&&finishedBC&&<RevealCard word={word} wasCorrect={wasCorrectBC} onNext={advanceNext}/>}
+      {wordObj&&practiceMode==='B'&&finishedBC&&<RevealCard word={wordObj} wasCorrect={wasCorrectBC} onNext={advanceNext}/>}
 
-      {/* MODE C: Hebrew → type English */}
-      {word&&practiceMode==='C'&&!finishedBC&&(<>
+      {wordObj&&practiceMode==='C'&&!finishedBC&&(<>
         <div className="w-full bg-gradient-to-br from-blue-400 to-teal-500 rounded-3xl p-5 flex flex-col items-center gap-3 shadow-lg">
           <div className="text-white font-bold text-sm opacity-90">כתוב את המילה האנגלית:</div>
-          <div className="text-6xl">{SP_EMOJI[word]||'📝'}</div>
-          <div className="text-3xl font-bold text-yellow-200">{SP_HE[word]}</div>
-          <div style={{direction:'ltr',display:'flex',gap:'4px',justifyContent:'center'}}>
-            {word.split('').map((_,i)=><div key={i} className="w-9 h-9 border-b-4 border-white/60"/>)}
+          <div className="text-6xl">{wordObj.emoji||'📝'}</div>
+          <div className="text-3xl font-bold text-yellow-200">{wordObj.he}</div>
+          <div style={{direction:'ltr',display:'flex',gap:'4px',justifyContent:'center',flexWrap:'wrap'}}>
+            {wordObj.en.split('').map((ch,i)=>ch===' '?<div key={i} style={{width:'12px'}}/>:<div key={i} className="w-9 h-9 border-b-4 border-white/60"/>)}
           </div>
           <Hearts remaining={attLeftBC}/>
         </div>
@@ -546,7 +608,7 @@ function SpellingTab(){
           <button className="btn-tap bg-blue-500 text-white px-5 rounded-2xl font-bold text-lg" onClick={handleSubmit}>✓</button>
         </div>
       </>)}
-      {word&&practiceMode==='C'&&finishedBC&&<RevealCard word={word} wasCorrect={wasCorrectBC} onNext={advanceNext}/>}
+      {wordObj&&practiceMode==='C'&&finishedBC&&<RevealCard word={wordObj} wasCorrect={wasCorrectBC} onNext={advanceNext}/>}
     </div>
   );
 }
